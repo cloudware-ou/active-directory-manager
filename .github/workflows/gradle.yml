@@ -1,3 +1,10 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
 name: Java CI with Gradle
 
 on:
@@ -15,24 +22,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    # Change directory to the api folder where the Gradle project is located
-    - name: Navigate to API directory
-      working-directory: ./api
-
-    # Setup Gradle for the project in api folder
+    # Navigate to the api directory where the Gradle project is located
     - name: Setup Gradle
+      working-directory: ./api
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-      with:
-        gradle-version: '8.9'
 
-    # Build the project using the Gradle Wrapper from the api folder
     - name: Build with Gradle Wrapper
       working-directory: ./api
       run: ./gradlew build
@@ -45,24 +45,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    # Navigate to the API directory
-    - name: Navigate to API directory
-      working-directory: ./api
-
-    # Setup Gradle in api directory
+    # Navigate to the api directory where the Gradle project is located
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-      with:
-        gradle-version: '8.9'
-
-    # Generate and submit the dependency graph for the project in api folder
-    - name: Generate and submit dependency graph
       working-directory: ./api
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+   
