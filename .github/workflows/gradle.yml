@@ -20,11 +20,6 @@ jobs:
     permissions:
       contents: read
 
-    defaults:
-      run:
-        working-directory: /api  # Set this to the directory where gradlew is located
-
-  
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 17
