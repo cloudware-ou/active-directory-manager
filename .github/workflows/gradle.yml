@@ -20,6 +20,11 @@ jobs:
     permissions:
       contents: read
 
+    defaults:
+      run:
+        working-directory: active-directory-manager/api  # Set this to the directory where gradlew is located
+
+  
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 17
