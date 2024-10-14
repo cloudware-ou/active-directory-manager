@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: active-directory-manager/api  # Set this to the directory where gradlew is located
+        working-directory: /api  # Set this to the directory where gradlew is located
 
   
     steps:
