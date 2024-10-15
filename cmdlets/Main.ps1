@@ -1,73 +1,158 @@
-function Connect-ToPostgreSQL {
-    param (
-        [string]$User,
-        [string]$Password,
-        [string]$Database,
-        [string]$Server,
-        [int]$Port = 5432
-    )
+# Define constants for assembly paths
+$NpgsqlPath = "./npgsql/lib/net8.0/Npgsql.dll"
+$LoggingAbstractionsPath = "./microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
 
-    # Check if the PostgreSQLCmdlets module is installed, if not, install it
-    if (-not (Get-Module -ListAvailable -Name PostgreSQLCmdlets)) {
-        Install-Module PostgreSQLCmdlets -Force -Scope CurrentUser
-    }
-
+# Function to load required assemblies
+function Load-Assemblies {
     try {
-        $postgresql = Connect-PostgreSQL -User $User -Password $Password -Database $Database -Server $Server -Port $Port
-
-        if ($postgresql) {
-            Write-Host "Connection to the database '$Database' on server '$Server' was successful!"
-
-            $query = 'SELECT id, command FROM ad_commands' # Select only the command field and the ID for updating status
-            $data = Invoke-PostgreSQL -Connection $postgresql -Query $query
-            
-            if ($data) {
-                # Execute each command retrieved from the database
-                foreach ($row in $data) {
-                    $command = $row.command
-                    $commandId = $row.id # Assuming there's an ID column to identify the command
-
-                    Write-Host "Executing command: $command"
-                    $result = Execute-ADCommand -ADCommand $command
-
-                    # Convert the result to a string
-                    $resultString = $result | Out-String
-
-                    # Prepare the SQL command to update command status and result
-                    $updateQuery = "UPDATE ad_commands SET command_status = 'done', result = @Result WHERE id = @CommandId"
-                    $params = @{
-                        '@Result'     = $resultString.Trim() 
-                        '@CommandId'  = $commandId
-                    }
-
-                    # Execute the update query
-                    Invoke-PostgreSQL -Connection $postgresql -Query $updateQuery -Params $params
-                    Write-Host "Command executed and updated in the database."
-                }
-            } else {
-                Write-Host "No data found in the 'ad_commands' table."
-            }
-
-        } else {
-            Write-Host "Connection failed!"
-        }
+        Add-Type -Path $NpgsqlPath
+        Add-Type -Path $LoggingAbstractionsPath
+        Write-Verbose "Assemblies loaded successfully."
     } catch {
-        Write-Host "An error occurred while trying to connect: $_"
+        Throw "Failed to load assemblies: $_"
     }
 }
 
-function Execute-ADCommand {
+# Function to create and open a PostgreSQL connection
+function Get-PostgreSQLConnection {
     param (
-        [string]$ADCommand
+        [Parameter(Mandatory)]
+        [string]$User,
+
+        [Parameter(Mandatory)]
+        [string]$Password,
+
+        [Parameter(Mandatory)]
+        [string]$Database,
+
+        [Parameter(Mandatory)]
+        [string]$Server,
+
+        [int]$Port = 5432
     )
 
     try {
-        # Execute the AD command and capture the result
-        $result = Invoke-Expression -Command $ADCommand
-        
-        # Check if the result is null or empty
-        if ($result) {
-            return $result
+        $connString = "Host=$Server;Port=$Port;Username=$User;Password=$Password;Database=$Database"
+        $conn = New-Object Npgsql.NpgsqlConnection($connString)
+        $conn.Open()
+
+        if ($conn.State -eq 'Open') {
+            Write-Verbose "Connected to database '$Database' on server '$Server'."
+            return $conn
+        } else {
+            Throw "Failed to open connection to the database."
+        }
+    } catch {
+        Throw "Error connecting to PostgreSQL: $_"
+    }
+}
+
+# Function to retrieve pending commands from the database
+function Get-PendingCommands {
+    param (
+        [Parameter(Mandatory)]
+        [Npgsql.NpgsqlConnection]$Connection
+    )
+
+    $query = "SELECT id, command FROM commands WHERE command_status = 'PENDING';"
+
+    try {
+        $cmd = $Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $reader = $cmd.ExecuteReader()
+
+        $data = @()
+        while ($reader.Read()) {
+            $data += [PSCustomObject]@{
+                Id      = $reader["id"]
+                Command = $reader["command"]
+            }
+        }
+        $reader.Close()
+
+        Write-Verbose "$($data.Count) pending command(s) retrieved."
+        return $data
+    } catch {
+        Throw "Error retrieving commands: $_"
+    }
+}
+
+# Function to update the status of a command
+function Update-CommandStatus {
+    param (
+        [Parameter(Mandatory)]
+        [Npgsql.NpgsqlConnection]$Connection,
+
+        [Parameter(Mandatory)]
+        [int]$CommandId,
+
+        [Parameter(Mandatory)]
+        [ValidateSet("PENDING", "PROCESSING", "COMPLETED")]
+        [string]$Status,
+
+        [string]$Result = $null
+    )
+
+    try {
+        $query = "UPDATE commands SET command_status = @Status"
+        if ($Result) {
+            $query += ", result = @Result"
+        }
+        $query += " WHERE id = @CommandId;"
+
+        $cmd = $Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Status", $Status))) | Out-Null
+        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@CommandId", $CommandId))) | Out-Null
+
+        if ($Result) {
+            $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Result", $Result))) | Out-Null
+        }
+
+        $cmd.ExecuteNonQuery() | Out-Null
+        Write-Verbose "Command ID $CommandId updated to status '$Status'."
+    } catch {
+        Throw "Error updating command status: $_"
+    }
+}
+
+
+# Function to execute an AD command on a remote server
+function Execute-ADCommand {
+    param (
+        [Parameter(Mandatory)]
+        [string]$ADCommand,
+        [Parameter(Mandatory)]
+        [string]$ADServer,
+        [Parameter(Mandatory)]
+        [string]$ADUsername,
+        [Parameter(Mandatory)]
+        [string]$ADPassword
+    )
+
+    # Define AD server and credentials (Consider securing credentials)
+
+
+    try {
+        $securePassword = ConvertTo-SecureString $ADPassword -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential ($ADUsername, $securePassword)
+
+        $scriptBlock = {
+            param($cmd)
+            Invoke-Expression $cmd
+        }
+
+        $result = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand
+
+        # Convert the result to a string representation
+        $resultString = if ($result) { 
+            $result | Out-String 
+        } else { 
+            "" 
+        }
+
+        if ($resultString.Trim() -ne "") {
+            return $resultString.Trim()
         } else {
             return "No output from command."
         }
@@ -77,5 +162,36 @@ function Execute-ADCommand {
     }
 }
 
-# Connect to the database and execute commands
-Connect-ToPostgreSQL -User "postgres" -Password "9112" -Database "active_directory_commands" -Server "localhost"
+
+try {
+    Load-Assemblies
+    $conn = Get-PostgreSQLConnection -User "$Env:db_user" -Password "$Env:db_password" -Database "active_directory_commands" -Server "localhost" -Port 5432
+
+    try {
+        $commands = Get-PendingCommands -Connection $conn
+
+        if ($commands.Count -gt 0) {
+            foreach ($cmd in $commands) {
+                # Update status to PROCESSING
+                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+
+                Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
+                $executionResult = Execute-ADCommand -ADCommand $cmd.Command -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
+
+                # Update status to DONE with result
+                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult
+
+                Write-Host "Command ID $($cmd.Id) executed and updated with result."
+            }
+        } else {
+            Write-Host "No pending commands found in the 'commands' table."
+        }
+    } finally {
+        if ($conn.State -eq 'Open') {
+            $conn.Close()
+            Write-Verbose "Database connection closed."
+        }
+    }
+} catch {
+    Write-Error "An error occurred: $_"
+}
