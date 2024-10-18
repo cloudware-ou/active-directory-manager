@@ -18,4 +18,5 @@ public class Commands {
     private String commandStatus;
     @Column(length = Integer.MAX_VALUE)
     private String result;
+
 }
