@@ -1,6 +1,7 @@
 package com.nortal.activedirectoryrestapi.controllers;
 
 import com.nortal.activedirectoryrestapi.services.CommandService;
+import com.nortal.activedirectoryrestapi.services.CommandStatusChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,9 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class RESTApiController {
     private final CommandService commandService;
+    private final CommandStatusChecker commandStatusChecker;
+
+    public RESTApiController(CommandService commandService) {
+        this.commandService = commandService;
+        this.commandStatusChecker = new CommandStatusChecker(this.commandService);
+    }
 
     @GetMapping("/")
     public ResponseEntity<String> index() {
@@ -23,8 +30,13 @@ public class RESTApiController {
     @PostMapping("/send-command")
     public ResponseEntity<String> executeCommand(@RequestBody Map<String, String> payload) {
         String command = payload.get("command");
-        commandService.insertCommand(command);
-        return ResponseEntity.ok("Command sent to the database");
+        try{
+            Long id = commandService.saveCommand(command);
+            return ResponseEntity.ok(commandStatusChecker.checkCommandStatus(id));
+        } catch (Exception e){
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+
     }
 
 }

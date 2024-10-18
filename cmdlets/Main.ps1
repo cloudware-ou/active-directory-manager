@@ -167,25 +167,43 @@ try {
     Load-Assemblies
     $conn = Get-PostgreSQLConnection -User "$Env:db_user" -Password "$Env:db_password" -Database "active_directory_commands" -Server "localhost" -Port 5432
 
+    Write-Host "Welcome! The script will proceed with polling database for pending commands to execute"
+    Write-Host "In order to quit please press 'q'..."
+    Write-Host ""
     try {
-        $commands = Get-PendingCommands -Connection $conn
+        while ($true) {  
+            $commands = Get-PendingCommands -Connection $conn
+            if ($commands.Count -gt 0) {
+                foreach ($cmd in $commands) {
+                    # Update status to PROCESSING
+                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
 
-        if ($commands.Count -gt 0) {
-            foreach ($cmd in $commands) {
-                # Update status to PROCESSING
-                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+                    Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
+                    $executionResult = Execute-ADCommand -ADCommand $cmd.Command -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
 
-                Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-                $executionResult = Execute-ADCommand -ADCommand $cmd.Command -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
+                    # Update status to DONE with result
+                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult
 
-                # Update status to DONE with result
-                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult
-
-                Write-Host "Command ID $($cmd.Id) executed and updated with result."
+                    Write-Host "Command ID $($cmd.Id) executed and updated with result."
+                }
+            } else {
+                Write-Host "No pending commands found in the 'commands' table."
             }
-        } else {
-            Write-Host "No pending commands found in the 'commands' table."
-        }
+
+              
+            # Block and wait for notifications with a timeout
+            $null = $conn.Wait(100)
+        
+            # Check if the user presses 'q' to exit
+            if ([console]::KeyAvailable) {
+                $key = [console]::ReadKey($true)
+                if ($key.Key -eq 'Q') {
+                    Write-Host "Exiting..."
+                    break
+                }
+            }
+            Start-Sleep 1
+        } 
     } finally {
         if ($conn.State -eq 'Open') {
             $conn.Close()
