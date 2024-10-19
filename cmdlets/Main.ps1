@@ -189,10 +189,6 @@ try {
             } else {
                 Write-Host "No pending commands found in the 'commands' table."
             }
-
-              
-            # Block and wait for notifications with a timeout
-            $null = $conn.Wait(100)
         
             # Check if the user presses 'q' to exit
             if ([console]::KeyAvailable) {
