@@ -13,6 +13,7 @@ public class Commands {
     @GeneratedValue
     private Long id;
     @NotNull
+    @Column(columnDefinition = "TEXT")
     private String command;
     @NotNull
     private String commandStatus;
