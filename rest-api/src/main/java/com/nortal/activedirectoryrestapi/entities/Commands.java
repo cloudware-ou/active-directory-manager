@@ -12,12 +12,15 @@ public class Commands {
     @Id
     @GeneratedValue
     private Long id;
+
     @NotNull
     @Column(columnDefinition = "TEXT")
     private String command;
+
     @NotNull
     private String commandStatus;
-    @Column(length = Integer.MAX_VALUE)
+
+    @Column(columnDefinition = "TEXT")
     private String result;
 
 }
