@@ -7,7 +7,7 @@ A software component designed to send queries to the Active Directory and retrie
 ## How to Use the Application
 
 ### 1. PostgreSQL Database Setup
-Ensure that a PostgreSQL database is running with the name **`active_directory_commands`**.
+Ensure that a PostgreSQL database is running.
 
 ### 2. Set Environment Variables
 Before starting the application, set the following environment variables. Make sure to update your database credentials.
@@ -54,9 +54,9 @@ Run the container, which will execute the added command with the following comma
 
 ```bash
 docker run -it --rm \
--e ADServer="135.236.152.178" \
--e ADUsername="vm-admin" \
--e ADPassword="activEDirectory_" \
+-e ADServer="server-ip" \
+-e ADUsername="user" \
+-e ADPassword="password" \
 -e db_user="adm" \
 -e db_password="password" \
 -e db_host="localhost" \
@@ -64,7 +64,7 @@ docker run -it --rm \
 -e db_port="5432" \
 --network host adm
 ```
-**NB!** Do not forget to change your database credentials. Also if you are using Docker Desktop do following steps: 
+**NB!** Do not forget to change your database and Windows Server credentials. Also if you are using Docker Desktop do following steps: 
 1. Sign in to your Docker account in Docker Desktop.
 2. Navigate to Settings.
 3. Under the Resource tab, select Network.
