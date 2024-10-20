@@ -64,7 +64,12 @@ docker run -it --rm \
 -e db_port="5432" \
 --network host adm
 ```
-**NB!** Do not forget to change your database credentials.
+**NB!** Do not forget to change your database credentials. Also if you are using Docker Desktop do following steps: 
+1. Sign in to your Docker account in Docker Desktop.
+2. Navigate to Settings.
+3. Under the Resource tab, select Network.
+4. Check the Enable host networking option.
+5. Select Apply and restart.
 
 ### 8. View Command Output
 After command execution, you will see the command output in the Swagger UI response.
