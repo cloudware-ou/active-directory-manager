@@ -22,34 +22,15 @@ db_port=5432
 ### 3. Start the Spring Boot Application
 Run the Spring Boot application.
 
-### 4. Access Swagger UI
-You can access the Swagger UI at:
-
-[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-
-### 5. Provide Payload for POST Request
-
-- **Example for Adding a New User:**
-
-```json
-{
-  "command": "New-ADUser -Name 'Alice Johnson' -GivenName 'Alice' -Surname 'Johnson' -SamAccountName 'ajohnson012' -UserPrincipalName 'ajohnnson02@domain.com' -Path 'CN=Users,DC=Domain,DC=ee' -AccountPassword (ConvertTo-SecureString 'ComplexP@ssw0rd4567' -AsPlainText -Force) -Enabled $true"
-}
-```
-
-- **Example for getting all users:**
-
-```json
-{"command":"Get-ADUser -Filter * -SearchBase \"DC=Domain,DC=ee\""}
-```
-### 6. Build Docker Image
+### 4. Build Docker Image
 Go to the `cmdlets` folder and build the Docker image using the following command:
 
 ```bash
 docker build -t adm .
 ```
 
-### 7. Run the Docker Container
+### 5. Run the Docker Container
+Make sure that you are executing this step only when necessary table is already created by Spring App. Otherwise the program will crash.
 Run the container, which will execute the added command with the following command:
 
 ```bash
@@ -64,12 +45,34 @@ docker run -it --rm \
 -e db_port="5432" \
 --network host adm
 ```
-**NB!** Do not forget to change your database and Windows Server credentials. Also if you are using Docker Desktop do following steps: 
+**NB!** Do not forget to change your database and Windows Server (AD) credentials. Also if you are using Docker Desktop do following steps: 
 1. Sign in to your Docker account in Docker Desktop.
 2. Navigate to Settings.
 3. Under the Resource tab, select Network.
 4. Check the Enable host networking option.
 5. Select Apply and restart.
+
+### 6. Access Swagger UI
+You can access the Swagger UI at:
+
+[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+### 7. Provide Payload for POST Request
+
+- **Example for Adding a New User:**
+
+```json
+{
+  "command": "New-ADUser -Name 'Alice Johnson' -GivenName 'Alice' -Surname 'Johnson' -SamAccountName 'ajohnson012' -UserPrincipalName 'ajohnnson02@domain.com' -Path 'CN=Users,DC=Domain,DC=ee' -AccountPassword (ConvertTo-SecureString 'ComplexP@ssw0rd4567' -AsPlainText -Force) -Enabled $true"
+}
+```
+
+- **Example for getting all users:**
+
+```json
+{"command":"Get-ADUser -Filter * -SearchBase \"DC=Domain,DC=ee\""}
+```
+
 
 ### 8. View Command Output
 After command execution, you will see the command output in the Swagger UI response.
