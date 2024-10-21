@@ -23,7 +23,7 @@ db_port=5432
 Run the Spring Boot application.
 
 ### 4. Build Docker Image
-Go to the `cmdlets` folder and build the Docker image using the following command. `docker` is substitutable with `podman`:
+Go to the `cmdlets` folder and build the Docker image using the following command (`docker` is substitutable with `podman` in this and the following steps):
 
 ```bash
 docker build -t adm .
