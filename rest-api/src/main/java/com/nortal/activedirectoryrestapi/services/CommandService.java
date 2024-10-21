@@ -1,15 +1,10 @@
 package com.nortal.activedirectoryrestapi.services;
 
 import com.nortal.activedirectoryrestapi.entities.Commands;
-import com.nortal.activedirectoryrestapi.repository.CommandRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class CommandService {

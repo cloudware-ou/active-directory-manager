@@ -12,15 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 public class RESTApiController {
     private final CommandService commandService;
     private final CommandStatusChecker commandStatusChecker;
 
-    public RESTApiController(CommandService commandService) {
-        this.commandService = commandService;
-        this.commandStatusChecker = new CommandStatusChecker(this.commandService);
-    }
 
     @GetMapping("/")
     public ResponseEntity<String> index() {
