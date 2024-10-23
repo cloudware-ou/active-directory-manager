@@ -47,6 +47,15 @@ dependencies {
 }
 
 publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.nortal'
+            artifactId = 'activedirectoryrestapi'
+            version = '0.0.1'
+
+            from components.java
+        }
+    }
     repositories {
         maven {
             name = "GitHubPackages"
