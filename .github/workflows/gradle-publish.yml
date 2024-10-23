@@ -39,7 +39,10 @@ jobs:
     # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
     # the publishing section of your build.gradle
     - name: Publish to GitHub Packages
-      run: ./gradlew publish
+      run: |
+        NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
+        echo "New version: ${NEW_VERSION}"
+        ./gradlew -Pversion=${NEW_VERSION} publish
       working-directory: rest-api
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
