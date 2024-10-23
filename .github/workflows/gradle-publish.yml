@@ -7,8 +7,9 @@
 
 name: Publish package to the Maven Central Repository
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - 'main'
 
 jobs:
   build:
@@ -41,5 +42,4 @@ jobs:
       run: ./gradlew publish
       working-directory: rest-api
       env:
-        USERNAME: ${{ github.actor }}
-        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

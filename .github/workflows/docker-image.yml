@@ -15,4 +15,5 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: cd cmdlets && docker build . --file Dockerfile --tag amd:$(date +%s)
+      run: docker build . --file Dockerfile --tag amd:$(date +%s)
+      working-directory: cmdlets
