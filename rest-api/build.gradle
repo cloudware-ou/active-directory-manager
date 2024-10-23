@@ -53,6 +53,7 @@ publishing {
             artifactId = 'activedirectoryrestapi'
             version = '0.0.1'
 
+            artifact bootJar
             from components.java
         }
     }
