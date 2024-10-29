@@ -11,12 +11,12 @@ public class CommandStatusChecker {
 
     private final CommandService commandService;
 
-    public String checkCommandStatus(Long id) throws Exception {
+    public Commands checkCommandStatus(Long id) throws Exception {
         while (true) {
             Commands refreshedEntity = commandService.getCommand(id);  // Refresh from DB
 
             if (refreshedEntity.getCommandStatus().equals("COMPLETED")) {
-                return refreshedEntity.getResult();
+                return refreshedEntity;
             }
 
             Thread.sleep(1000);  // Polling interval

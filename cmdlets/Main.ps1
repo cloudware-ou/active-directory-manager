@@ -90,23 +90,31 @@ function Update-CommandStatus {
         [ValidateSet("PENDING", "PROCESSING", "COMPLETED")]
         [string]$Status,
 
-        [string]$Result = $null
+        [string]$Result = $null,
+        [int] $ExitCode = $null
     )
 
     try {
         $query = "UPDATE commands SET command_status = @Status"
-        if ($Result) {
+
+        if ($Result -ne $null) {
             $query += ", result = @Result"
         }
-        $query += " WHERE id = @CommandId;"
+        if ($ExitCode -ne $null) {
+            $query += ", exit_code = @ExitCode"
+        }
 
+        $query += " WHERE id = @CommandId;"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Status", $Status))) | Out-Null
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@CommandId", $CommandId))) | Out-Null
 
-        if ($Result) {
+        if ($Result -ne $null) {
             $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Result", $Result))) | Out-Null
+        }
+        if ($ExitCode -ne $null) {
+            $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@ExitCode", $ExitCode))) | Out-Null
         }
 
         $cmd.ExecuteNonQuery() | Out-Null
@@ -139,11 +147,25 @@ function Execute-ADCommand {
 
         $scriptBlock = {
             param($cmd)
-            Invoke-Expression $cmd
+            $result = ""
+            $exitCode = 0
+            try {
+                $output = Invoke-Expression $cmd
+                $result = $output
+                $exitCode = $LASTEXITCODE
+                Write-Output @($result, $exitCode)
+            }
+            catch {
+                Write-Host "Error while executing command"
+                $result = $_.Exception.Message
+                $exitCode = 1
+                Write-Output @($result, $exitCode)
+            }
         }
 
-        $result = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand
-
+        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand
+        $result = $invokeResult[0]
+        $exitCode = $invokeResult[1]
         # Convert the result to a string representation
         $resultString = if ($result) { 
             $result | Out-String 
@@ -151,11 +173,7 @@ function Execute-ADCommand {
             "" 
         }
 
-        if ($resultString.Trim() -ne "") {
-            return $resultString.Trim()
-        } else {
-            return "No output from command."
-        }
+        return @{Result = $resultString.Trim(); ExitCode = $exitCode}
     } catch {
         Write-Error "Failed to execute AD command: $_"
         return $_.Exception.Message
@@ -170,6 +188,7 @@ try {
     Write-Host "Welcome! The script will proceed with polling database for pending commands to execute"
     Write-Host "In order to quit please press 'q'..."
     Write-Host ""
+    Write-Host "Listening to the database..."
     try {
         while ($true) {  
             $commands = Get-PendingCommands -Connection $conn
@@ -182,12 +201,10 @@ try {
                     $executionResult = Execute-ADCommand -ADCommand $cmd.Command -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
 
                     # Update status to DONE with result
-                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult
+                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
 
                     Write-Host "Command ID $($cmd.Id) executed and updated with result."
                 }
-            } else {
-                Write-Host "No pending commands found in the 'commands' table."
             }
         
             # Check if the user presses 'q' to exit

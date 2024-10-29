@@ -23,4 +23,5 @@ public class Commands {
     @Column(columnDefinition = "TEXT")
     private String result;
 
+    private Integer exitCode;
 }
