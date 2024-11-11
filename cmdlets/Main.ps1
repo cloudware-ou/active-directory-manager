@@ -54,7 +54,7 @@ function Get-PendingCommands {
         [Npgsql.NpgsqlConnection]$Connection
     )
 
-    $query = "SELECT id, command FROM commands WHERE command_status = 'PENDING';"
+    $query = "SELECT id, command, arguments FROM commands WHERE command_status = 'PENDING';"
 
     try {
         $cmd = $Connection.CreateCommand()
@@ -66,6 +66,7 @@ function Get-PendingCommands {
             $data += [PSCustomObject]@{
                 Id      = $reader["id"]
                 Command = $reader["command"]
+                Arguments = $reader["arguments"] | ConvertFrom-Json -AsHashtable
             }
         }
         $reader.Close()
@@ -130,6 +131,7 @@ function Execute-ADCommand {
     param (
         [Parameter(Mandatory)]
         [string]$ADCommand,
+        [OrderedHashtable]$Arguments,
         [Parameter(Mandatory)]
         [string]$ADServer,
         [Parameter(Mandatory)]
@@ -146,11 +148,11 @@ function Execute-ADCommand {
         $credential = New-Object System.Management.Automation.PSCredential ($ADUsername, $securePassword)
 
         $scriptBlock = {
-            param($cmd)
+            param($cmd, $arguments)
             $result = ""
             $exitCode = 0
             try {
-                $output = Invoke-Expression $cmd
+                $output = & $cmd @arguments
                 $result = $output
                 $exitCode = $LASTEXITCODE
                 Write-Output @($result, $exitCode)
@@ -163,17 +165,17 @@ function Execute-ADCommand {
             }
         }
 
-        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand
+        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $arguments
         $result = $invokeResult[0]
         $exitCode = $invokeResult[1]
         # Convert the result to a string representation
         $resultString = if ($result) { 
-            $result | Out-String 
+            $result | ConvertTo-Json
         } else { 
             "" 
         }
 
-        return @{Result = $resultString.Trim(); ExitCode = $exitCode}
+        return @{Result = $resultString; ExitCode = $exitCode}
     } catch {
         Write-Error "Failed to execute AD command: $_"
         return $_.Exception.Message
@@ -198,7 +200,7 @@ try {
                     Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
 
                     Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-                    $executionResult = Execute-ADCommand -ADCommand $cmd.Command -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
+                    $executionResult = Execute-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments) -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
 
                     # Update status to DONE with result
                     Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode

@@ -6,6 +6,8 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+
 @Service
 public class CommandService {
 
@@ -13,9 +15,10 @@ public class CommandService {
     private EntityManager entityManager;
 
     @Transactional
-    public Long saveCommand(String command) {
+    public Long saveCommand(String command, String params) {
         Commands commandsEntity = new Commands();
         commandsEntity.setCommand(command);
+        commandsEntity.setArguments(params);
         commandsEntity.setCommandStatus("PENDING");
         entityManager.persist(commandsEntity);
         entityManager.flush();  // Ensure the entity is saved immediately

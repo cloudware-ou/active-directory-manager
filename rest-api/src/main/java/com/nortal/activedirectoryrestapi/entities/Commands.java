@@ -14,8 +14,10 @@ public class Commands {
     private Long id;
 
     @NotNull
-    @Column(columnDefinition = "TEXT")
     private String command;
+
+    @Column(columnDefinition = "TEXT")
+    private String arguments;
 
     @NotNull
     private String commandStatus;
