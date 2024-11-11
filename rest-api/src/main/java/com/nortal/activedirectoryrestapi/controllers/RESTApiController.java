@@ -32,9 +32,7 @@ public class RESTApiController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<String> getUser(
-            @RequestParam Map<String, String> queryParams
-    ){
+    public ResponseEntity<String> getUser(@RequestParam Map<String, Object> queryParams){
         System.out.println(queryParams.toString());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -51,9 +49,7 @@ public class RESTApiController {
     }
 
     @DeleteMapping("/users")
-    public ResponseEntity<String> deleteUser(
-            @RequestParam Map<String, String> queryParams
-    ){
+    public ResponseEntity<String> deleteUser(@RequestParam Map<String, String> queryParams){
         System.out.println(queryParams.toString());
         ObjectMapper objectMapper = new ObjectMapper();
         try {

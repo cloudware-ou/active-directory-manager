@@ -131,7 +131,7 @@ function Execute-ADCommand {
     param (
         [Parameter(Mandatory)]
         [string]$ADCommand,
-        [OrderedHashtable]$Arguments,
+        [hashtable]$Arguments,
         [Parameter(Mandatory)]
         [string]$ADServer,
         [Parameter(Mandatory)]
@@ -165,7 +165,10 @@ function Execute-ADCommand {
             }
         }
 
-        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $arguments
+        if ($Arguments.ContainsKey('AccountPassword')) {
+            $Arguments['AccountPassword'] = ConvertTo-SecureString $Arguments['AccountPassword'] -AsPlainText -Force
+        }
+        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments
         $result = $invokeResult[0]
         $exitCode = $invokeResult[1]
         # Convert the result to a string representation
