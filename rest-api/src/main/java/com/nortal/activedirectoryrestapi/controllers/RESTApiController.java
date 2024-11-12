@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nortal.activedirectoryrestapi.entities.Commands;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandStatusChecker;
+import com.nortal.activedirectoryrestapi.services.InputHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,6 +18,8 @@ import java.util.Map;
 public class RESTApiController {
     private final CommandService commandService;
     private final CommandStatusChecker commandStatusChecker;
+    private final InputHandler inputHandler;
+
 
     private ResponseEntity<String> executeCommand(String command, String payload) {
         try{
@@ -32,32 +36,32 @@ public class RESTApiController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<String> getUser(@RequestParam Map<String, Object> queryParams){
-        System.out.println(queryParams.toString());
-        ObjectMapper objectMapper = new ObjectMapper();
+    public ResponseEntity<String> getUser(@RequestParam MultiValueMap<String, String> queryParams){
         try {
-            String json = objectMapper.writeValueAsString(queryParams);
+            String json = inputHandler.convertToJson(queryParams);
             return executeCommand("Get-ADUser", json);
         } catch (JsonProcessingException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PostMapping("/users")
+    @PostMapping(value="/users", consumes={"application/json"})
     public ResponseEntity<String> newUser(@RequestBody String payload) {
-        return executeCommand("New-ADUser", payload);
-    }
-
-    @DeleteMapping("/users")
-    public ResponseEntity<String> deleteUser(@RequestParam Map<String, String> queryParams){
-        System.out.println(queryParams.toString());
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            String json = objectMapper.writeValueAsString(queryParams);
-            return executeCommand("Remove-ADUser", json);
+            inputHandler.validateJson(payload);
+            return executeCommand("New-ADUser", payload);
         } catch (JsonProcessingException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+    @DeleteMapping("/users")
+    public ResponseEntity<String> deleteUser(@RequestParam MultiValueMap<String, String> queryParams){
+        try {
+            String json = inputHandler.convertToJson(queryParams);
+            return executeCommand("Remove-ADUser", json);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

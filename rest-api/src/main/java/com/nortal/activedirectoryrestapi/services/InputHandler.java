@@ -1,0 +1,28 @@
+package com.nortal.activedirectoryrestapi.services;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class InputHandler {
+    public String convertToJson(MultiValueMap<String, String> multiValueMap) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(
+                multiValueMap.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> entry.getValue().size() == 1 ? entry.getValue().getFirst() : entry.getValue()
+                        )));
+    }
+
+    public void validateJson(String json) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.readTree(json);
+    }
+}

@@ -32,7 +32,5 @@ public class CommandService {
         return entity;
     }
 
-
-
 }
 
