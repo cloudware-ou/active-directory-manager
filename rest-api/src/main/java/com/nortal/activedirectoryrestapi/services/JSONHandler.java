@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class JSONHandler {
-    public String convertToJson(MultiValueMap<String, String> multiValueMap) throws JsonProcessingException {
+    public String convertToJson(MultiValueMap<String, Object> multiValueMap) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(
                 multiValueMap.entrySet().stream()
@@ -29,13 +29,4 @@ public class JSONHandler {
         objectMapper.readTree(json);
     }
 
-    public ResponseEntity<String> createErrorResponseJson(HttpStatus status, ADCommandExecutionException exception) {
-        ErrorObject errorObject = new ErrorObject(exception.getMessage(), status.value(), exception.getTimestamp().toString());
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return ResponseEntity.status(status).body(objectMapper.writeValueAsString(errorObject));
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
 }
