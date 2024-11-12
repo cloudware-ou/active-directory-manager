@@ -23,44 +23,17 @@ public class RESTApiController {
 
     @GetMapping("/users")
     public ResponseEntity<String> getUser(@RequestParam MultiValueMap<String, Object> queryParams){
-        try {
-            String json = jsonHandler.convertToJson(queryParams);
-            return ResponseEntity.ok().body(commandWorker.executeCommand("Get-ADUser", json).getResult());
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (ADCommandExecutionException e) {
-            return errorHandler.createErrorResponse(e);
-        } catch (InterruptedException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return commandWorker.submitJob("Get-ADUser", queryParams);
     }
 
     @PostMapping(value="/users", consumes={"application/json"})
     public ResponseEntity<String> newUser(@RequestBody String payload) {
-        try {
-            jsonHandler.validateJson(payload);
-            return ResponseEntity.ok().body(commandWorker.executeCommand("New-ADUser", payload).getResult());
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (ADCommandExecutionException e) {
-            return errorHandler.createErrorResponse(e);
-        } catch (InterruptedException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return commandWorker.submitJob("New-ADUser", payload);
     }
 
     @DeleteMapping("/users")
     public ResponseEntity<String> deleteUser(@RequestParam MultiValueMap<String, Object> queryParams){
         queryParams.addAll("Confirm", List.of(false));
-        try {
-            String json = jsonHandler.convertToJson(queryParams);
-            return ResponseEntity.ok().body(commandWorker.executeCommand("Remove-ADUser", json).getResult());
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (ADCommandExecutionException e) {
-            return errorHandler.createErrorResponse(e);
-        } catch (InterruptedException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return commandWorker.submitJob("Remove-ADUser", queryParams);
     }
 }
