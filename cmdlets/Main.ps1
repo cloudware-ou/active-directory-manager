@@ -105,7 +105,7 @@ function Update-CommandStatus {
             $query += ", exit_code = @ExitCode"
         }
 
-        $query += " WHERE id = @CommandId;"
+        $query += ", timestamp = @TimeStamp WHERE id = @CommandId;"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Status", $Status))) | Out-Null
@@ -117,6 +117,8 @@ function Update-CommandStatus {
         if ($ExitCode -ne $null) {
             $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@ExitCode", $ExitCode))) | Out-Null
         }
+        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@TimeStamp", (Get-Date)))) | Out-Null
+
 
         $cmd.ExecuteNonQuery() | Out-Null
         Write-Verbose "Command ID $CommandId updated to status '$Status'."
@@ -154,12 +156,11 @@ function Execute-ADCommand {
             try {
                 $output = & $cmd @arguments
                 $result = $output
-                $exitCode = $LASTEXITCODE
                 Write-Output @($result, $exitCode)
             }
             catch {
                 Write-Host "Error while executing command"
-                $result = $_.Exception.Message
+                $result = $_.Exception.Message.Trim()
                 $exitCode = 1
                 Write-Output @($result, $exitCode)
             }
@@ -173,9 +174,9 @@ function Execute-ADCommand {
         $exitCode = $invokeResult[1]
         # Convert the result to a string representation
         $resultString = if ($result) { 
-            $result | ConvertTo-Json
+            ($result | ConvertTo-Json).Trim('"')
         } else { 
-            "" 
+            "Command completed without output" 
         }
 
         return @{Result = $resultString; ExitCode = $exitCode}
