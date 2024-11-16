@@ -10,18 +10,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ErrorHandler {
     private final Map<String, HttpStatus> errorCodes = new HashMap<>(
                  Map.ofEntries(
                          Map.entry("Directory object not found", HttpStatus.NOT_FOUND),
-                         Map.entry("The specified account already exists", HttpStatus.CONFLICT)
+                         Map.entry("The specified account already exists", HttpStatus.CONFLICT),
+                         Map.entry("The specified group already exists", HttpStatus.CONFLICT),
+                         Map.entry("Cannot find an object with identity:  under: .", HttpStatus.NOT_FOUND)
                  )
          );
 
     public ResponseEntity<String> createErrorResponse(ADCommandExecutionException exception) {
-        HttpStatus httpStatus = this.errorCodes.getOrDefault(exception.getMessage(), HttpStatus.BAD_REQUEST);
+
+        String key = exception.getMessage().replaceAll("'[^']*'", "");
+        HttpStatus httpStatus = this.errorCodes.getOrDefault(key, HttpStatus.BAD_REQUEST);
         ErrorObject errorObject = new ErrorObject(exception.getMessage(), httpStatus.value(), exception.getTimestamp().toString());
         ObjectMapper objectMapper = new ObjectMapper();
         try {

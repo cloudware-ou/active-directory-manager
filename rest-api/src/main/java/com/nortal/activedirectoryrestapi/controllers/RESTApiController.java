@@ -26,14 +26,40 @@ public class RESTApiController {
         return commandWorker.submitJob("Get-ADUser", queryParams);
     }
 
-    @PostMapping(value="/users", consumes={"application/json"})
+    @PostMapping("/users")
     public ResponseEntity<String> newUser(@RequestBody String payload) {
         return commandWorker.submitJob("New-ADUser", payload);
     }
 
     @DeleteMapping("/users")
-    public ResponseEntity<String> deleteUser(@RequestParam MultiValueMap<String, Object> queryParams){
+    public ResponseEntity<String> removeUser(@RequestParam MultiValueMap<String, Object> queryParams){
         queryParams.addAll("Confirm", List.of(false));
         return commandWorker.submitJob("Remove-ADUser", queryParams);
+    }
+
+    @PatchMapping("/users")
+    public ResponseEntity<String> updateUser(@RequestBody String payload) {
+        return commandWorker.submitJob("Set-ADUser", payload);
+    }
+
+    @GetMapping("/groups")
+    public ResponseEntity<String> getGroup(@RequestParam MultiValueMap<String, Object> queryParams){
+        return commandWorker.submitJob("Get-ADGroup", queryParams);
+    }
+
+    @PostMapping("/groups")
+    public ResponseEntity<String> newGroup(@RequestBody String payload) {
+        return commandWorker.submitJob("New-ADGroup", payload);
+    }
+
+    @DeleteMapping("/groups")
+    public ResponseEntity<String> removeGroup(@RequestParam MultiValueMap<String, Object> queryParams){
+        queryParams.addAll("Confirm", List.of(false));
+        return commandWorker.submitJob("Remove-ADGroup", queryParams);
+    }
+
+    @PatchMapping("/groups")
+    public ResponseEntity<String> updateGroup(@RequestBody String payload) {
+        return commandWorker.submitJob("Set-ADGroup", payload);
     }
 }
