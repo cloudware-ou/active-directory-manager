@@ -2,13 +2,8 @@ package com.nortal.activedirectoryrestapi.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
-import com.nortal.activedirectoryrestapi.misc.ErrorObject;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 

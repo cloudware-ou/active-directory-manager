@@ -175,8 +175,10 @@ function Execute-ADCommand {
         # Convert the result to a string representation
         $resultString = if ($result) { 
             ($result | ConvertTo-Json).Trim('"')
-        } else { 
-            "Command completed without output" 
+        } else {
+            @{
+                Message  = "The command $ADCommand completed successfully with no output." 
+            } | ConvertTo-Json
         }
 
         return @{Result = $resultString; ExitCode = $exitCode}

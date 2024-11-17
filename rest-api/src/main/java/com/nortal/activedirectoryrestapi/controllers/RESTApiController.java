@@ -62,4 +62,30 @@ public class RESTApiController {
     public ResponseEntity<String> updateGroup(@RequestBody String payload) {
         return commandWorker.submitJob("Set-ADGroup", payload);
     }
+
+    @GetMapping ("/groups/members")
+    public ResponseEntity<String> getGroupMember(@RequestParam MultiValueMap<String, Object> queryParams){
+        return commandWorker.submitJob("Get-ADGroupMember", queryParams);
+    }
+
+    @PostMapping("/groups/members")
+    public ResponseEntity<String> addGroupMember(@RequestBody String payload) {
+        return commandWorker.submitJob("Add-ADGroupMember", payload);
+    }
+
+    @DeleteMapping("/groups/members")
+    public ResponseEntity<String> removeGroupMember(@RequestParam MultiValueMap<String, Object> queryParams){
+        queryParams.addAll("Confirm", List.of(false));
+        return commandWorker.submitJob("Remove-ADGroupMember", queryParams);
+    }
+
+    @PatchMapping("/accounts/enable")
+    public ResponseEntity<String> enableAccount(@RequestBody String payload){
+        return commandWorker.submitJob("Enable-ADAccount", payload);
+    }
+    @PatchMapping("/accounts/disable")
+    public ResponseEntity<String> disableAccount(@RequestBody String payload){
+        return commandWorker.submitJob("Disable-ADAccount", payload);
+    }
+
 }

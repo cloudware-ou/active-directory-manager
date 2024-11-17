@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ErrorObject {
+    private final String command;
     private final String errorMessage;
     private final int httpStatusCode;
     private final String timestamp;

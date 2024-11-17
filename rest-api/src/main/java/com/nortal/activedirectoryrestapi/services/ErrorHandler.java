@@ -27,7 +27,7 @@ public class ErrorHandler {
 
         String key = exception.getMessage().replaceAll("'[^']*'", "");
         HttpStatus httpStatus = this.errorCodes.getOrDefault(key, HttpStatus.BAD_REQUEST);
-        ErrorObject errorObject = new ErrorObject(exception.getMessage(), httpStatus.value(), exception.getTimestamp().toString());
+        ErrorObject errorObject = new ErrorObject(exception.getCommand(), exception.getMessage(), httpStatus.value(), exception.getTimestamp().toString());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             return ResponseEntity.status(httpStatus).body(objectMapper.writeValueAsString(errorObject));
