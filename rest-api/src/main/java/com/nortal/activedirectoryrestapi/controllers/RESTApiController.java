@@ -37,7 +37,7 @@ public class RESTApiController {
         return commandWorker.submitJob("Remove-ADUser", queryParams);
     }
 
-    @PatchMapping("/users")
+    @PutMapping("/users")
     public ResponseEntity<String> updateUser(@RequestBody String payload) {
         return commandWorker.submitJob("Set-ADUser", payload);
     }
