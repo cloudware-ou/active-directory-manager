@@ -1,12 +1,9 @@
 package com.nortal.activedirectoryrestapi.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import com.nortal.activedirectoryrestapi.services.ErrorHandler;
 import com.nortal.activedirectoryrestapi.services.JSONHandler;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +14,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RESTApiController {
     private final CommandWorker commandWorker;
-    private final JSONHandler jsonHandler;
-    private final ErrorHandler errorHandler;
 
 
     @GetMapping("/users")
@@ -33,11 +28,10 @@ public class RESTApiController {
 
     @DeleteMapping("/users")
     public ResponseEntity<String> removeUser(@RequestParam MultiValueMap<String, Object> queryParams){
-        queryParams.addAll("Confirm", List.of(false));
         return commandWorker.submitJob("Remove-ADUser", queryParams);
     }
 
-    @PutMapping("/users")
+    @PatchMapping("/users")
     public ResponseEntity<String> updateUser(@RequestBody String payload) {
         return commandWorker.submitJob("Set-ADUser", payload);
     }
@@ -54,7 +48,6 @@ public class RESTApiController {
 
     @DeleteMapping("/groups")
     public ResponseEntity<String> removeGroup(@RequestParam MultiValueMap<String, Object> queryParams){
-        queryParams.addAll("Confirm", List.of(false));
         return commandWorker.submitJob("Remove-ADGroup", queryParams);
     }
 
@@ -75,7 +68,6 @@ public class RESTApiController {
 
     @DeleteMapping("/groups/members")
     public ResponseEntity<String> removeGroupMember(@RequestParam MultiValueMap<String, Object> queryParams){
-        queryParams.addAll("Confirm", List.of(false));
         return commandWorker.submitJob("Remove-ADGroupMember", queryParams);
     }
 
@@ -88,4 +80,8 @@ public class RESTApiController {
         return commandWorker.submitJob("Disable-ADAccount", payload);
     }
 
+    @PatchMapping("/accounts/password")
+    public ResponseEntity<String> setAccountPassword(@RequestBody String payload){
+        return commandWorker.submitJob("Set-ADAccountPassword", payload);
+    }
 }

@@ -142,9 +142,6 @@ function Execute-ADCommand {
         [string]$ADPassword
     )
 
-    # Define AD server and credentials (Consider securing credentials)
-
-
     try {
         $securePassword = ConvertTo-SecureString $ADPassword -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential ($ADUsername, $securePassword)
@@ -154,21 +151,28 @@ function Execute-ADCommand {
             $result = ""
             $exitCode = 0
             try {
+                $Command = Get-Command $cmd
+                if ($Command.Parameters.ContainsKey("Confirm")) {
+                    # Add -Confirm:$false to the arguments
+                    $arguments["Confirm"] = $false
+                }
                 $output = & $cmd @arguments
                 $result = $output
-                Write-Output @($result, $exitCode)
-            }
-            catch {
+                
+            } catch {
                 Write-Host "Error while executing command"
                 $result = $_.Exception.Message.Trim()
                 $exitCode = 1
-                Write-Output @($result, $exitCode)
+            }
+            Write-Output @($result, $exitCode)
+        }
+
+        foreach ($passwordArg in ('AccountPassword', 'NewPassword', 'OldPassword')){
+            if ($Arguments.ContainsKey($passwordArg)) {
+                $Arguments[$passwordArg] = ConvertTo-SecureString $Arguments[$passwordArg] -AsPlainText -Force
             }
         }
 
-        if ($Arguments.ContainsKey('AccountPassword')) {
-            $Arguments['AccountPassword'] = ConvertTo-SecureString $Arguments['AccountPassword'] -AsPlainText -Force
-        }
         $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments
         $result = $invokeResult[0]
         $exitCode = $invokeResult[1]
