@@ -106,7 +106,7 @@ public class CommandIntegrationTest {
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
         Commands savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
