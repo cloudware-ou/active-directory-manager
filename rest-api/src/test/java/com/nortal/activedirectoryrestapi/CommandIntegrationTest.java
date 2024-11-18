@@ -145,7 +145,7 @@ public class CommandIntegrationTest {
         HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
         ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
-        assertEquals(HttpStatus.OK, createResponse.getStatusCode());
+        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
 
         String updatePayload = "{"
                 + "\"Identity\": \"testuser4\","
