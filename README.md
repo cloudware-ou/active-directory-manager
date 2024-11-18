@@ -87,3 +87,21 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
 
 ### 8. View Command Output
 After command execution, you will see the command output (in JSON format) together with a relevant status code in the Swagger UI response. 
+
+### Jenkins Pipeline for Automated Testing and Building
+
+There is also a Jenkins pipeline that automates the testing and building process for this application. The pipeline executes tests, builds the Spring Boot application, and creates a Docker container for deployment.
+
+You can view and trigger the Jenkins job here:
+
+[Jenkins Pipeline - Active Directory Manager](https://srv620081.hstgr.cloud/job/ActiveDirectory/)
+
+The pipeline performs the following steps:
+1. **Test Execution:** Runs automated tests to ensure that the application is functioning as expected.
+2. **Build Spring Boot App:** Compiles and builds the Spring Boot application.
+3. **Build Docker Image:** Creates a Docker image of the application, which can then be deployed to a server.
+
+This pipeline ensures that the application is tested and built in a repeatable and automated manner, reducing the potential for errors during manual setup.
+
+
+
