@@ -20,8 +20,8 @@ public class JSONHandler {
     }
 
     public void validateJson(String json) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.readTree(json);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.readTree(json);
     }
 
 }
