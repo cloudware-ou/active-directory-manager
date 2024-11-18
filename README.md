@@ -58,7 +58,7 @@ You can access the Swagger UI at:
 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ### 7. Make a HTTP request
-
+The payload (or parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Refer to Active Directory Module documentation for the reference. The only exceptions are passwords, which have to be specified as plaintext (as shown here).
 - **Example for Adding a New User:**
 /users - POST
 ```json
