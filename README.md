@@ -58,7 +58,8 @@ You can access the Swagger UI at:
 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ### 7. Make a HTTP request
-The payload (or parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Refer to Active Directory Module documentation for the reference. The only exceptions are passwords, which have to be specified as plaintext (as shown here).
+The payload (or query parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Switch parameters should have a 'true' value. Refer to [Active Directory Module documentation] (https://learn.microsoft.com/en-us/powershell/module/activedirectory/) for the reference. The only known exceptions to the documentation are passwords (AccountPassword, OldPassword, NewPassword), which have to be specified as plaintext (as shown here) and later converted to PowerShell SecureString by the app. **Please note that passwords supplied this way are not secure and should be changed on first log on.**
+
 - **Example for Adding a New User:**
 /users - POST
 ```json
@@ -85,4 +86,4 @@ The payload (or parameters in case of GET/DELETE requests) should contain argume
 
 
 ### 8. View Command Output
-After command execution, you will see the command output in the Swagger UI response.
+After command execution, you will see the command output in the Swagger UI response together with a relevant status code. 

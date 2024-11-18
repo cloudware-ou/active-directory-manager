@@ -53,7 +53,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'com.nortal'
             artifactId = 'activedirectoryrestapi'
-            version = '0.0.1'
+            version = '0.0.2'
 
             artifact bootJar
             from components.java
