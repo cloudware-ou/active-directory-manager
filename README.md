@@ -30,7 +30,7 @@ docker build -t adm .
 ```
 
 ### 5. Run the Docker Container
-Make sure that you are executing this step only when necessary table is already created by Spring App. Otherwise the program will crash.
+Make sure that you are executing this step only when necessary table is already created by Spring App. Otherwise the program will crash. You need to have a working Windows Server with Active Directory enabled for this step.
 Run the container, which will execute the added command with the following command:
 
 ```bash
@@ -86,4 +86,4 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
 
 
 ### 8. View Command Output
-After command execution, you will see the command output in the Swagger UI response together with a relevant status code. 
+After command execution, you will see the command output (in JSON format) together with a relevant status code in the Swagger UI response. 
