@@ -41,6 +41,8 @@ public class CommandIntegrationTest {
 
     private TestRestTemplate restTemplate;
 
+    private String createdUserSamAccountName;
+
     private String getBaseUrl() {
         return "http://localhost:" + port;
     }
@@ -50,6 +52,13 @@ public class CommandIntegrationTest {
         restTemplate = new TestRestTemplate();
     }
 
+    @AfterEach
+    public void tearDown() {
+        if (createdUserSamAccountName != null) {
+            deleteUserIfExists(createdUserSamAccountName);
+            createdUserSamAccountName = null; // Reset for next test
+        }
+    }
 
     private void deleteUserIfExists(String samAccountName) {
         String deleteUrl = getBaseUrl() + "/users";
@@ -58,14 +67,13 @@ public class CommandIntegrationTest {
 
         HttpEntity<MultiValueMap<String, Object>> deleteEntity = new HttpEntity<>(params);
 
-        ResponseEntity<String> deleteResponse = restTemplate.exchange(
+        restTemplate.exchange(
                 deleteUrl,
                 HttpMethod.DELETE,
                 deleteEntity,
                 String.class
         );
     }
-
 
     @Test
     public void testCreateNewUser() throws Exception {
@@ -79,6 +87,8 @@ public class CommandIntegrationTest {
                 + "\"Enabled\": true,"
                 + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
                 + "}";
+
+        createdUserSamAccountName = "testuser3";
 
         Commands mockCommand = new Commands();
         mockCommand.setCommand("New-ADUser");
@@ -103,8 +113,6 @@ public class CommandIntegrationTest {
         assertEquals("New-ADUser", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
         assertEquals(0, savedCommand.getExitCode());
-
-        deleteUserIfExists("testuser3");
     }
 
     @Test
@@ -119,6 +127,8 @@ public class CommandIntegrationTest {
                 + "\"Enabled\": true,"
                 + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
                 + "}";
+
+        createdUserSamAccountName = "testuser4";
 
         Commands mockCreateCommand = new Commands();
         mockCreateCommand.setCommand("New-ADUser");
@@ -161,9 +171,8 @@ public class CommandIntegrationTest {
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
-        deleteUserIfExists("testuser4update");
+        createdUserSamAccountName = "testuser4update";
     }
-
 
     @Test
     public void testGetUsers() throws Exception {
