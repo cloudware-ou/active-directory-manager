@@ -15,7 +15,6 @@ import java.util.List;
 public class RESTApiController {
     private final CommandWorker commandWorker;
 
-
     @GetMapping("/users")
     public ResponseEntity<String> getUser(@RequestParam MultiValueMap<String, Object> queryParams){
         return commandWorker.submitJob("Get-ADUser", queryParams);
@@ -31,7 +30,7 @@ public class RESTApiController {
         return commandWorker.submitJob("Remove-ADUser", queryParams);
     }
 
-    @PatchMapping("/users")
+    @PutMapping("/users")
     public ResponseEntity<String> updateUser(@RequestBody String payload) {
         return commandWorker.submitJob("Set-ADUser", payload);
     }
@@ -51,7 +50,7 @@ public class RESTApiController {
         return commandWorker.submitJob("Remove-ADGroup", queryParams);
     }
 
-    @PatchMapping("/groups")
+    @PutMapping("/groups")
     public ResponseEntity<String> updateGroup(@RequestBody String payload) {
         return commandWorker.submitJob("Set-ADGroup", payload);
     }
@@ -71,16 +70,16 @@ public class RESTApiController {
         return commandWorker.submitJob("Remove-ADGroupMember", queryParams);
     }
 
-    @PatchMapping("/accounts/enable")
+    @PutMapping("/accounts/enable")
     public ResponseEntity<String> enableAccount(@RequestBody String payload){
         return commandWorker.submitJob("Enable-ADAccount", payload);
     }
-    @PatchMapping("/accounts/disable")
+    @PutMapping("/accounts/disable")
     public ResponseEntity<String> disableAccount(@RequestBody String payload){
         return commandWorker.submitJob("Disable-ADAccount", payload);
     }
 
-    @PatchMapping("/accounts/password")
+    @PutMapping("/accounts/password")
     public ResponseEntity<String> setAccountPassword(@RequestBody String payload){
         return commandWorker.submitJob("Set-ADAccountPassword", payload);
     }

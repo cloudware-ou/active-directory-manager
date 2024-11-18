@@ -157,7 +157,7 @@ public class CommandIntegrationTest {
 
         String updateUrl = getBaseUrl() + "/users";
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
-        ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PATCH, updateEntity, String.class);
+        ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
