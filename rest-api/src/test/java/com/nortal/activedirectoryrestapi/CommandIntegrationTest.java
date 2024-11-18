@@ -192,7 +192,7 @@ public class CommandIntegrationTest {
         String url = getBaseUrl() + "/users?Filter=*&SearchBase=DC=Domain,DC=ee";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertTrue(Objects.requireNonNull(response.getBody()).contains("testuser2"));
     }
 }
