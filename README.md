@@ -57,20 +57,30 @@ You can access the Swagger UI at:
 
 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
-### 7. Provide Payload for POST Request
+### 7. Make a HTTP request
 
 - **Example for Adding a New User:**
-
+/users - POST
 ```json
 {
-  "command": "New-ADUser -Name 'Alice Johnson' -GivenName 'Alice' -Surname 'Johnson' -SamAccountName 'ajohnson012' -UserPrincipalName 'ajohnnson02@domain.com' -Path 'CN=Users,DC=Domain,DC=ee' -AccountPassword (ConvertTo-SecureString 'ComplexP@ssw0rd4567' -AsPlainText -Force) -Enabled $true"
+  "Name": "Aliwfededece Johnson",
+  "GivenName": "Alifewce",
+  "Surname": "Johnfewfsfeson",
+  "SamAccountName": "ajofededewhnson012",
+  "UserPrincipalName": "ajohnfewdedenson02@domain.com",
+  "Path": "CN=Users,DC=Domain,DC=ee", 
+  "Enabled": true,
+  "AccountPassword": "ComplexP@ssw0rd4567"
 }
 ```
 
 - **Example for getting all users:**
-
+/users - GET
 ```json
-{"command":"Get-ADUser -Filter * -SearchBase \"DC=Domain,DC=ee\""}
+{
+  "Filter": "*",
+  "SearchBase": "DC=Domain,DC=ee"
+}
 ```
 
 
