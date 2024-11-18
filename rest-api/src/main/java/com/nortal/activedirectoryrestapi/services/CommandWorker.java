@@ -50,9 +50,9 @@ public class CommandWorker {
     public ResponseEntity<String> submitJobMeta(String command, String validJson){
         try {
             HttpStatusCode httpStatusCode = HttpStatus.OK;
-            /*if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
+            if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
                 httpStatusCode = HttpStatus.CREATED;
-            }*/
+            }
             return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, validJson).getResult());
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
