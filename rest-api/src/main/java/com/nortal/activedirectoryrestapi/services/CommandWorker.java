@@ -2,11 +2,13 @@ package com.nortal.activedirectoryrestapi.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nortal.activedirectoryrestapi.Constants;
 import com.nortal.activedirectoryrestapi.entities.Commands;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.misc.ErrorObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -47,7 +49,11 @@ public class CommandWorker {
 
     public ResponseEntity<String> submitJobMeta(String command, String validJson){
         try {
-            return ResponseEntity.ok().body(this.executeCommand(command, validJson).getResult());
+            HttpStatusCode httpStatusCode = HttpStatus.OK;
+            if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
+                httpStatusCode = HttpStatus.CREATED;
+            }
+            return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, validJson).getResult());
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
         } catch (InterruptedException e) {
