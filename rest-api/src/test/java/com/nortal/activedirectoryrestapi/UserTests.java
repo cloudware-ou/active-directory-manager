@@ -2,16 +2,13 @@ package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
 import com.nortal.activedirectoryrestapi.entities.Commands;
-import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -25,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CommandIntegrationTest {
+public class UserTests {
 
     @LocalServerPort
     private int port;
@@ -195,4 +192,5 @@ public class CommandIntegrationTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(Objects.requireNonNull(response.getBody()).contains("testuser2"));
     }
+
 }
