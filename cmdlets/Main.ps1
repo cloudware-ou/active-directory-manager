@@ -173,9 +173,25 @@ function Execute-ADCommand {
             }
         }
 
-        $invokeResult = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments
-        $result = $invokeResult[0]
-        $exitCode = $invokeResult[1]
+        $result = ""
+        $exitCode = 0
+
+        $job = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+        try {
+            $job | Wait-Job
+            $invokeResult = Receive-Job -Job $job
+            $result = $invokeResult[0]
+            $exitCode = $invokeResult[1]
+        }
+        catch {
+            Write-Error $_
+            if ($_.Exception.Message -like "*one or more jobs are blocked waiting for user interaction*") {
+                Stop-Job -Job $job
+                $result = "You forgot to supply some of the mandatory parameters."
+                $exitCode = 1
+            }
+        }
+        
         # Convert the result to a string representation
         $resultString = if ($result) { 
             ($result | ConvertTo-Json).Trim('"')
