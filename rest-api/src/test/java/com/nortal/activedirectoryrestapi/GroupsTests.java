@@ -2,16 +2,13 @@ package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
 import com.nortal.activedirectoryrestapi.entities.Commands;
-import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -25,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CommandIntegrationTest {
+public class GroupsTests {
 
     @LocalServerPort
     private int port;
@@ -41,7 +38,7 @@ public class CommandIntegrationTest {
 
     private TestRestTemplate restTemplate;
 
-    private String createdUserSamAccountName;
+    private String createdGroupName;
 
     private String getBaseUrl() {
         return "http://localhost:" + port;
@@ -54,16 +51,16 @@ public class CommandIntegrationTest {
 
     @AfterEach
     public void tearDown() {
-        if (createdUserSamAccountName != null) {
-            deleteUserIfExists(createdUserSamAccountName);
-            createdUserSamAccountName = null; // Reset for next test
+        if (createdGroupName != null) {
+            deleteGroupIfExists(createdGroupName);
+            createdGroupName = null; // Reset for next test
         }
     }
 
-    private void deleteUserIfExists(String samAccountName) {
-        String deleteUrl = getBaseUrl() + "/users";
+    private void deleteGroupIfExists(String groupName) {
+        String deleteUrl = getBaseUrl() + "/groups";
         MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
-        params.add("Identity", samAccountName);
+        params.add("Identity", groupName);
 
         HttpEntity<MultiValueMap<String, Object>> deleteEntity = new HttpEntity<>(params);
 
@@ -76,30 +73,25 @@ public class CommandIntegrationTest {
     }
 
     @Test
-    public void testCreateNewUser() throws Exception {
-        String payload = "{"
-                + "\"Name\": \"Test3 User\","
-                + "\"GivenName\": \"Test3\","
-                + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser3\","
-                + "\"UserPrincipalName\": \"testuser3@domain.com\","
-                + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
-                + "\"Enabled\": true,"
-                + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
-                + "}";
+    public void testCreateNewGroup() throws Exception {
+        String payload = "{" +
+                "\"Name\": \"TestGroup2\"," +
+                "\"GroupScope\": \"Global\"," +
+                "\"GroupCategory\": \"Security\"" +
+                "}";
 
-        createdUserSamAccountName = "testuser3";
+        createdGroupName = "TestGroup2";
 
         Commands mockCommand = new Commands();
-        mockCommand.setCommand("New-ADUser");
+        mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
-        mockCommand.setId(1L);
+        mockCommand.setId(4L);
 
-        when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCommand);
+        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
 
-        String url = getBaseUrl() + "/users";
+        String url = getBaseUrl() + "/groups";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(payload, headers);
@@ -110,77 +102,67 @@ public class CommandIntegrationTest {
 
         Commands savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
-        assertEquals("New-ADUser", savedCommand.getCommand());
+        assertEquals("New-ADGroup", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
         assertEquals(0, savedCommand.getExitCode());
     }
 
     @Test
-    public void testUpdateUser() throws Exception {
-        String payload = "{"
-                + "\"Name\": \"Test4 User\","
-                + "\"GivenName\": \"Test4\","
-                + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser4\","
-                + "\"UserPrincipalName\": \"testuser4@domain.com\","
-                + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
-                + "\"Enabled\": true,"
-                + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
-                + "}";
+    public void testUpdateGroup() throws Exception {
+        String payload = "{" +
+                "\"Name\": \"TestGroup3\"," +
+                "\"GroupScope\": \"Global\"," +
+                "\"GroupCategory\": \"Security\"" +
+                "}";
 
-        createdUserSamAccountName = "testuser4";
+        createdGroupName = "TestGroup3";
 
         Commands mockCreateCommand = new Commands();
-        mockCreateCommand.setCommand("New-ADUser");
+        mockCreateCommand.setCommand("New-ADGroup");
         mockCreateCommand.setArguments(payload);
         mockCreateCommand.setExitCode(0);
-        mockCreateCommand.setId(2L);
+        mockCreateCommand.setId(5L);
 
-        when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
+        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCreateCommand);
         when(commandService.getCommand(mockCreateCommand.getId())).thenReturn(mockCreateCommand);
 
-        String createUrl = getBaseUrl() + "/users";
+        String createUrl = getBaseUrl() + "/groups";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
         ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
-        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
 
-        String updatePayload = "{"
-                + "\"Identity\": \"testuser4\","
-                + "\"GivenName\": \"Test4\","
-                + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser4update\","
-                + "\"UserPrincipalName\": \"testuser4@domain.com\","
-                + "\"Enabled\": true"
-                + "}";
+        String updatePayload = "{" +
+                "\"Identity\": \"TestGroup3\"," +
+                "\"SamAccountName\": \"UpdatedTestGroup3\"," +
+                "\"GroupScope\": \"Global\"" +
+                "}";
 
         Commands mockUpdateCommand = new Commands();
-        mockUpdateCommand.setCommand("Set-ADUser");
+        mockUpdateCommand.setCommand("Set-ADGroup");
         mockUpdateCommand.setArguments(updatePayload);
         mockUpdateCommand.setExitCode(0);
-        mockUpdateCommand.setId(3L);
+        mockUpdateCommand.setId(6L);
 
-        when(commandWorker.executeCommand("Set-ADUser", updatePayload)).thenReturn(mockUpdateCommand);
+        when(commandWorker.executeCommand("Set-ADGroup", updatePayload)).thenReturn(mockUpdateCommand);
         when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
 
-        String updateUrl = getBaseUrl() + "/users";
+        String updateUrl = getBaseUrl() + "/groups";
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
         ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
-        createdUserSamAccountName = "testuser4update";
     }
 
     @Test
-    public void testGetUsers() throws Exception {
+    public void testGetGroups() throws Exception {
         MultiValueMap<String, Object> queryParams = new LinkedMultiValueMap<>();
         queryParams.add("Filter", "*");
         queryParams.add("SearchBase", "DC=Domain,DC=ee");
 
-        String mockCommand = "Get-ADUser";
+        String mockCommand = "Get-ADGroup";
         Commands command = new Commands();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
@@ -189,10 +171,10 @@ public class CommandIntegrationTest {
         String mockJson = "{\"Filter\":\"*\",\"SearchBase\":\"DC=Domain,DC=ee\"}";
         when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);
 
-        String url = getBaseUrl() + "/users?Filter=*&SearchBase=DC=Domain,DC=ee";
+        String url = getBaseUrl() + "/groups?Filter=*&SearchBase=DC=Domain,DC=ee";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(Objects.requireNonNull(response.getBody()).contains("testuser2"));
+        assertTrue(Objects.requireNonNull(response.getBody()).contains("TestGroup1"));
     }
 }
