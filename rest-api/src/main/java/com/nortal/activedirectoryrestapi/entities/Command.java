@@ -10,7 +10,8 @@ import java.time.OffsetDateTime;
 @Entity
 @Getter
 @Setter
-public class Commands {
+@Table(name="commands")
+public class Command {
     @Id
     @GeneratedValue
     private Long id;

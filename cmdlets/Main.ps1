@@ -2,37 +2,20 @@
 $NpgsqlPath = "./npgsql/lib/net8.0/Npgsql.dll"
 $LoggingAbstractionsPath = "./microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
 
-# Function to load required assemblies
-function Load-Assemblies {
-    try {
-        Add-Type -Path $NpgsqlPath
-        Add-Type -Path $LoggingAbstractionsPath
-        Write-Verbose "Assemblies loaded successfully."
-    } catch {
-        Throw "Failed to load assemblies: $_"
-    }
+
+try {
+    Add-Type -Path $NpgsqlPath
+    Add-Type -Path $LoggingAbstractionsPath
+    Write-Verbose "Assemblies loaded successfully."
+} catch {
+    Throw "Failed to load assemblies: $_"
 }
+
 
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
-    param (
-        [Parameter(Mandatory)]
-        [string]$User,
-
-        [Parameter(Mandatory)]
-        [string]$Password,
-
-        [Parameter(Mandatory)]
-        [string]$Database,
-
-        [Parameter(Mandatory)]
-        [string]$Server,
-
-        [int]$Port = 5432
-    )
-
     try {
-        $connString = "Host=$Server;Port=$Port;Username=$User;Password=$Password;Database=$Database"
+        $connString = "Host=$Env:db_host;Port=$Env:db_port;Username=$Env:db_user;Password=$Env:db_password;Database=$Env:db_name"
         $conn = New-Object Npgsql.NpgsqlConnection($connString)
         $conn.Open()
 
@@ -60,7 +43,6 @@ function Get-PendingCommands {
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $reader = $cmd.ExecuteReader()
-
         $data = @()
         while ($reader.Read()) {
             $data += [PSCustomObject]@{
@@ -160,7 +142,6 @@ function Execute-ADCommand {
                 $result = $output
                 
             } catch {
-                Write-Host "Error while executing command"
                 $result = $_.Exception.Message.Trim()
                 $exitCode = 1
             }
@@ -184,7 +165,6 @@ function Execute-ADCommand {
             $exitCode = $invokeResult[1]
         }
         catch {
-            Write-Error $_
             if ($_.Exception.Message -like "*one or more jobs are blocked waiting for user interaction*") {
                 Stop-Job -Job $job
                 $result = "You forgot to supply some of the mandatory parameters."
@@ -208,49 +188,47 @@ function Execute-ADCommand {
     }
 }
 
+$notificationHandler = {
+    param($origin, $payload)
+    Write-Host "Received notification from channel $($payload.Channel) for command ID $($payload.Payload)"
+    $conn = Get-PostgreSQLConnection
+    $commands = Get-PendingCommands -Connection $conn
 
-try {
-    Load-Assemblies
-    $conn = Get-PostgreSQLConnection -User "$Env:db_user" -Password "$Env:db_password" -Database "$Env:db_name" -Server "$Env:db_host" -Port "$Env:db_port"
+    if ($commands.Count -gt 0) {
+        foreach ($cmd in $commands) {
+            # Update status to PROCESSING
+            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
 
-    Write-Host "Welcome! The script will proceed with polling database for pending commands to execute"
-    Write-Host "In order to quit please press 'q'..."
-    Write-Host ""
-    Write-Host "Listening to the database..."
-    try {
-        while ($true) {  
-            $commands = Get-PendingCommands -Connection $conn
-            if ($commands.Count -gt 0) {
-                foreach ($cmd in $commands) {
-                    # Update status to PROCESSING
-                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+            Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
+            $executionResult = Execute-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments) -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
 
-                    Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-                    $executionResult = Execute-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments) -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
+            # Update status to DONE with result
+            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
 
-                    # Update status to DONE with result
-                    Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
-
-                    Write-Host "Command ID $($cmd.Id) executed and updated with result."
-                }
-            }
-        
-#             # Check if the user presses 'q' to exit
-#             if ([console]::KeyAvailable) {
-#                 $key = [console]::ReadKey($true)
-#                 if ($key.Key -eq 'Q') {
-#                     Write-Host "Exiting..."
-#                     break
-#                 }
-#             }
-            Start-Sleep 1
-        } 
-    } finally {
-        if ($conn.State -eq 'Open') {
-            $conn.Close()
-            Write-Verbose "Database connection closed."
+            Write-Host "Command ID $($cmd.Id) executed and updated with result."
         }
     }
+}
+
+try {
+    $conn = Get-PostgreSQLConnection
+
+    Write-Host "Welcome! The script will proceed with listening to the database for new pending commands to execute"
+    Write-Host "In order to quit please press 'Ctrl+C'..."
+    Write-Host ""
+    Write-Host "Listening to the database..."
+
+    $listenCommand = $conn.CreateCommand()
+    $listenCommand.CommandText = "LISTEN new_commands;"
+    $listenCommand.ExecuteNonQuery() >> $null
+
+    $conn.add_Notification($notificationHandler)
+
+    while ($true) {
+        # Wait for a notification
+        $conn.Wait(1000) >> $null
+    }
+
 } catch {
     Write-Error "An error occurred: $_"
 }

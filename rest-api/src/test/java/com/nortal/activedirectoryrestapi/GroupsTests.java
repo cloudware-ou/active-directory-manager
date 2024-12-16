@@ -1,7 +1,7 @@
 package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
@@ -82,7 +82,7 @@ public class GroupsTests {
 
         createdGroupName = "TestGroup2";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -100,7 +100,7 @@ public class GroupsTests {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("New-ADGroup", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
@@ -117,7 +117,7 @@ public class GroupsTests {
 
         createdGroupName = "TestGroup3";
 
-        Commands mockCreateCommand = new Commands();
+        Command mockCreateCommand = new Command();
         mockCreateCommand.setCommand("New-ADGroup");
         mockCreateCommand.setArguments(payload);
         mockCreateCommand.setExitCode(0);
@@ -139,7 +139,7 @@ public class GroupsTests {
                 "\"GroupScope\": \"Global\"" +
                 "}";
 
-        Commands mockUpdateCommand = new Commands();
+        Command mockUpdateCommand = new Command();
         mockUpdateCommand.setCommand("Set-ADGroup");
         mockUpdateCommand.setArguments(updatePayload);
         mockUpdateCommand.setExitCode(0);
@@ -163,7 +163,7 @@ public class GroupsTests {
         queryParams.add("SearchBase", "DC=Domain,DC=ee");
 
         String mockCommand = "Get-ADGroup";
-        Commands command = new Commands();
+        Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
         command.setExitCode(0);

@@ -1,7 +1,7 @@
 package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
@@ -87,7 +87,7 @@ public class UserTests {
 
         createdUserSamAccountName = "testuser3";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("New-ADUser");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -105,7 +105,7 @@ public class UserTests {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("New-ADUser", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
@@ -127,7 +127,7 @@ public class UserTests {
 
         createdUserSamAccountName = "testuser4";
 
-        Commands mockCreateCommand = new Commands();
+        Command mockCreateCommand = new Command();
         mockCreateCommand.setCommand("New-ADUser");
         mockCreateCommand.setArguments(payload);
         mockCreateCommand.setExitCode(0);
@@ -153,7 +153,7 @@ public class UserTests {
                 + "\"Enabled\": true"
                 + "}";
 
-        Commands mockUpdateCommand = new Commands();
+        Command mockUpdateCommand = new Command();
         mockUpdateCommand.setCommand("Set-ADUser");
         mockUpdateCommand.setArguments(updatePayload);
         mockUpdateCommand.setExitCode(0);
@@ -178,7 +178,7 @@ public class UserTests {
         queryParams.add("SearchBase", "DC=Domain,DC=ee");
 
         String mockCommand = "Get-ADUser";
-        Commands command = new Commands();
+        Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
         command.setExitCode(0);

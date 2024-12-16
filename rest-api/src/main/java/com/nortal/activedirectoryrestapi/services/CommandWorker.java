@@ -1,11 +1,9 @@
 package com.nortal.activedirectoryrestapi.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nortal.activedirectoryrestapi.Constants;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
-import com.nortal.activedirectoryrestapi.misc.ErrorObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -24,8 +22,9 @@ public class CommandWorker {
     private final CommandService commandService;
     private final JSONHandler jsonHandler;
     private final ErrorHandler errorHandler;
+    private final NotificationListener notificationListener;
 
-    public Commands checkCommandStatus(Long id) throws InterruptedException {
+    /*public Commands checkCommandStatus(Long id) throws InterruptedException {
         while (true) {
             Commands refreshedEntity = commandService.getCommand(id);  // Refresh from DB
 
@@ -35,11 +34,15 @@ public class CommandWorker {
 
             sleep(1000);  // Polling interval
         }
+    }*/
+
+    public Command waitForResult(Long id) throws InterruptedException {
+        return notificationListener.getCompletedCommand(id);
     }
 
-    public Commands executeCommand(String command, String payload) throws ADCommandExecutionException, InterruptedException {
+    public Command executeCommand(String command, String payload) throws ADCommandExecutionException, InterruptedException {
             Long id = commandService.saveCommand(command, payload);
-            Commands entity = this.checkCommandStatus(id);
+            Command entity = this.waitForResult(id);
             if (entity.getExitCode() == 0){
                 return entity;
             } else {
