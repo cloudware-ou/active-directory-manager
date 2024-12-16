@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class GroupsTests {
+public class GroupTests {
 
     @LocalServerPort
     private int port;
@@ -43,6 +43,7 @@ public class GroupsTests {
     private String getBaseUrl() {
         return "http://localhost:" + port;
     }
+    private Helper helper = new Helper();
 
     @BeforeEach
     public void setUp() {
@@ -52,35 +53,21 @@ public class GroupsTests {
     @AfterEach
     public void tearDown() {
         if (createdGroupName != null) {
-            deleteGroupIfExists(createdGroupName);
-            createdGroupName = null; // Reset for next test
+            helper.deleteIfExists("CN="+createdGroupName+",CN=Users,DC=Domain,DC=ee", getBaseUrl()+"/groups");
+            createdGroupName = null;
         }
     }
 
-    private void deleteGroupIfExists(String groupName) {
-        String deleteUrl = getBaseUrl() + "/groups";
-        MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
-        params.add("Identity", groupName);
-
-        HttpEntity<MultiValueMap<String, Object>> deleteEntity = new HttpEntity<>(params);
-
-        restTemplate.exchange(
-                deleteUrl,
-                HttpMethod.DELETE,
-                deleteEntity,
-                String.class
-        );
-    }
 
     @Test
     public void testCreateNewGroup() throws Exception {
         String payload = "{" +
-                "\"Name\": \"TestGroup2\"," +
+                "\"Name\": \"TestGroup1\"," +
                 "\"GroupScope\": \"Global\"," +
                 "\"GroupCategory\": \"Security\"" +
                 "}";
 
-        createdGroupName = "TestGroup2";
+        createdGroupName = "TestGroup1";
 
         Commands mockCommand = new Commands();
         mockCommand.setCommand("New-ADGroup");
@@ -109,35 +96,38 @@ public class GroupsTests {
 
     @Test
     public void testUpdateGroup() throws Exception {
-        String payload = "{" +
-                "\"Name\": \"TestGroup3\"," +
-                "\"GroupScope\": \"Global\"," +
-                "\"GroupCategory\": \"Security\"" +
-                "}";
-
-        createdGroupName = "TestGroup3";
-
-        Commands mockCreateCommand = new Commands();
-        mockCreateCommand.setCommand("New-ADGroup");
-        mockCreateCommand.setArguments(payload);
-        mockCreateCommand.setExitCode(0);
-        mockCreateCommand.setId(5L);
-
-        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCreateCommand);
-        when(commandService.getCommand(mockCreateCommand.getId())).thenReturn(mockCreateCommand);
-
-        String createUrl = getBaseUrl() + "/groups";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
-
-        ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
+        helper.createGroup(getBaseUrl()+"/groups", commandWorker);
+//        String payload = "{" +
+//                "\"Name\": \"TestGroup3\"," +
+//                "\"GroupScope\": \"Global\"," +
+//                "\"GroupCategory\": \"Security\"" +
+//                "}";
+//
+//        createdGroupName = "TestGroup3";
+//
+//        Commands mockCreateCommand = new Commands();
+//        mockCreateCommand.setCommand("New-ADGroup");
+//        mockCreateCommand.setArguments(payload);
+//        mockCreateCommand.setExitCode(0);
+//        mockCreateCommand.setId(5L);
+//
+//        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCreateCommand);
+//        when(commandService.getCommand(mockCreateCommand.getId())).thenReturn(mockCreateCommand);
+//
+//        String createUrl = getBaseUrl() + "/groups";
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_JSON);
+//        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+//
+//        ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
 
         String updatePayload = "{" +
-                "\"Identity\": \"TestGroup3\"," +
-                "\"SamAccountName\": \"UpdatedTestGroup3\"," +
+                "\"Identity\": \"TestGroup2\"," +
+                "\"SamAccountName\": \"UpdatedTestGroup\"," +
                 "\"GroupScope\": \"Global\"" +
                 "}";
+
+        createdGroupName = "TestGroup2";
 
         Commands mockUpdateCommand = new Commands();
         mockUpdateCommand.setCommand("Set-ADGroup");
@@ -149,6 +139,8 @@ public class GroupsTests {
         when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
 
         String updateUrl = getBaseUrl() + "/groups";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
         ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
 
@@ -175,6 +167,6 @@ public class GroupsTests {
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(Objects.requireNonNull(response.getBody()).contains("TestGroup1"));
+        assertTrue(Objects.requireNonNull(response.getBody()).contains("TestGroup3"));
     }
 }

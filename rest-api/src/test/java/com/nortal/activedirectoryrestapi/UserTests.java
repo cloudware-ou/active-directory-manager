@@ -27,8 +27,10 @@ public class UserTests {
     @LocalServerPort
     private int port;
 
-    @InjectMocks
-    private RESTApiController restApiController;
+    private String getBaseUrl() {
+        return "http://localhost:" + port;
+    }
+
 
     @Mock
     private CommandWorker commandWorker;
@@ -40,9 +42,8 @@ public class UserTests {
 
     private String createdUserSamAccountName;
 
-    private String getBaseUrl() {
-        return "http://localhost:" + port;
-    }
+    private Helper helper = new Helper();
+
 
     @BeforeEach
     public void setUp() {
@@ -52,40 +53,25 @@ public class UserTests {
     @AfterEach
     public void tearDown() {
         if (createdUserSamAccountName != null) {
-            deleteUserIfExists(createdUserSamAccountName);
-            createdUserSamAccountName = null; // Reset for next test
+            helper.deleteIfExists(createdUserSamAccountName, getBaseUrl()+"/users");
         }
     }
 
-    private void deleteUserIfExists(String samAccountName) {
-        String deleteUrl = getBaseUrl() + "/users";
-        MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
-        params.add("Identity", samAccountName);
-
-        HttpEntity<MultiValueMap<String, Object>> deleteEntity = new HttpEntity<>(params);
-
-        restTemplate.exchange(
-                deleteUrl,
-                HttpMethod.DELETE,
-                deleteEntity,
-                String.class
-        );
-    }
 
     @Test
     public void testCreateNewUser() throws Exception {
         String payload = "{"
-                + "\"Name\": \"Test3 User\","
-                + "\"GivenName\": \"Test3\","
+                + "\"Name\": \"Test User\","
+                + "\"GivenName\": \"Test\","
                 + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser3\","
-                + "\"UserPrincipalName\": \"testuser3@domain.com\","
+                + "\"SamAccountName\": \"testuser\","
+                + "\"UserPrincipalName\": \"testuser@domain.com\","
                 + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
                 + "\"Enabled\": true,"
                 + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
                 + "}";
 
-        createdUserSamAccountName = "testuser3";
+        createdUserSamAccountName = "testuser";
 
         Commands mockCommand = new Commands();
         mockCommand.setCommand("New-ADUser");
@@ -114,42 +100,14 @@ public class UserTests {
 
     @Test
     public void testUpdateUser() throws Exception {
-        String payload = "{"
-                + "\"Name\": \"Test4 User\","
-                + "\"GivenName\": \"Test4\","
-                + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser4\","
-                + "\"UserPrincipalName\": \"testuser4@domain.com\","
-                + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
-                + "\"Enabled\": true,"
-                + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
-                + "}";
-
-        createdUserSamAccountName = "testuser4";
-
-        Commands mockCreateCommand = new Commands();
-        mockCreateCommand.setCommand("New-ADUser");
-        mockCreateCommand.setArguments(payload);
-        mockCreateCommand.setExitCode(0);
-        mockCreateCommand.setId(2L);
-
-        when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
-        when(commandService.getCommand(mockCreateCommand.getId())).thenReturn(mockCreateCommand);
-
-        String createUrl = getBaseUrl() + "/users";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
-
-        ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
-        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+        helper.createTestUser(getBaseUrl()+"/users", commandWorker);
 
         String updatePayload = "{"
-                + "\"Identity\": \"testuser4\","
-                + "\"GivenName\": \"Test4\","
+                + "\"Identity\": \"testuser\","
+                + "\"GivenName\": \"Test\","
                 + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser4update\","
-                + "\"UserPrincipalName\": \"testuser4@domain.com\","
+                + "\"SamAccountName\": \"testuserupdate\","
+                + "\"UserPrincipalName\": \"testuser@domain.com\","
                 + "\"Enabled\": true"
                 + "}";
 
@@ -163,12 +121,14 @@ public class UserTests {
         when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
 
         String updateUrl = getBaseUrl() + "/users";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
         ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
-        createdUserSamAccountName = "testuser4update";
+        createdUserSamAccountName = "testuserupdate";
     }
 
     @Test
