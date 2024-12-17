@@ -19,10 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 @RequiredArgsConstructor
 public class NotificationListener {
 
-
-    @Autowired
-    private DataSource dataSource;
-
+    private final DataSource dataSource;
     private final CommandService commandService;
 
     private final ConcurrentHashMap<Long, BlockingQueue<Command>> completedCommandsQueue = new ConcurrentHashMap<>();

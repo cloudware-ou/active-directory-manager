@@ -34,10 +34,14 @@ function Get-PostgreSQLConnection {
 function Get-PendingCommands {
     param (
         [Parameter(Mandatory)]
-        [Npgsql.NpgsqlConnection]$Connection
+        [Npgsql.NpgsqlConnection]$Connection,
+        [string]$Id
     )
 
     $query = "SELECT id, command, arguments FROM commands WHERE command_status = 'PENDING';"
+    if ($null -ne $Id){
+        $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
+    }
 
     try {
         $cmd = $Connection.CreateCommand()
@@ -111,22 +115,16 @@ function Update-CommandStatus {
 
 
 # Function to execute an AD command on a remote server
-function Execute-ADCommand {
+function Invoke-ADCommand {
     param (
         [Parameter(Mandatory)]
         [string]$ADCommand,
-        [hashtable]$Arguments,
-        [Parameter(Mandatory)]
-        [string]$ADServer,
-        [Parameter(Mandatory)]
-        [string]$ADUsername,
-        [Parameter(Mandatory)]
-        [string]$ADPassword
+        [hashtable]$Arguments
     )
 
     try {
-        $securePassword = ConvertTo-SecureString $ADPassword -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential ($ADUsername, $securePassword)
+        $securePassword = ConvertTo-SecureString $Env:ADPassword -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential ($Env:ADUsername, $securePassword)
 
         $scriptBlock = {
             param($cmd, $arguments)
@@ -157,7 +155,7 @@ function Execute-ADCommand {
         $result = ""
         $exitCode = 0
 
-        $job = Invoke-Command -ComputerName $ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+        $job = Invoke-Command -ComputerName $Env:ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
         try {
             $job | Wait-Job
             $invokeResult = Receive-Job -Job $job
@@ -171,10 +169,10 @@ function Execute-ADCommand {
                 $exitCode = 1
             }
         }
-        
+
         # Convert the result to a string representation
         $resultString = if ($result) { 
-            ($result | ConvertTo-Json).Trim('"')
+            $result | ConvertTo-Json -AsArray
         } else {
             @{
                 Message  = "The command $ADCommand completed successfully with no output." 
@@ -190,9 +188,12 @@ function Execute-ADCommand {
 
 $notificationHandler = {
     param($origin, $payload)
-    Write-Host "Received notification from channel $($payload.Channel) for command ID $($payload.Payload)"
+    $id = $($payload.Payload)
+    $channel = $($payload.Channel)
+    Write-Host "Received notification from channel $channel for command ID $id"
     $conn = Get-PostgreSQLConnection
-    $commands = Get-PendingCommands -Connection $conn
+
+    $commands = Get-PendingCommands -Connection $conn -Id $id
 
     if ($commands.Count -gt 0) {
         foreach ($cmd in $commands) {
@@ -200,7 +201,7 @@ $notificationHandler = {
             Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
 
             Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-            $executionResult = Execute-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments) -ADServer $Env:ADServer -ADUsername $Env:ADUsername -ADPassword $Env:ADPassword
+            $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
 
             # Update status to DONE with result
             Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
