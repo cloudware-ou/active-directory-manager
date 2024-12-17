@@ -13,8 +13,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.List;
 
-import static java.lang.Thread.sleep;
-
 @Service
 @RequiredArgsConstructor
 public class CommandWorker {
@@ -23,18 +21,6 @@ public class CommandWorker {
     private final JSONHandler jsonHandler;
     private final ErrorHandler errorHandler;
     private final NotificationListener notificationListener;
-
-    /*public Commands checkCommandStatus(Long id) throws InterruptedException {
-        while (true) {
-            Commands refreshedEntity = commandService.getCommand(id);  // Refresh from DB
-
-            if (refreshedEntity.getCommandStatus().equals("COMPLETED")) {
-                return refreshedEntity;
-            }
-
-            sleep(1000);  // Polling interval
-        }
-    }*/
 
     public Command waitForResult(Long id) throws InterruptedException {
         return notificationListener.getCompletedCommand(id);

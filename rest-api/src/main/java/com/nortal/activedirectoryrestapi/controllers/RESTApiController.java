@@ -2,15 +2,11 @@ package com.nortal.activedirectoryrestapi.controllers;
 
 import com.nortal.activedirectoryrestapi.Constants;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
-import com.nortal.activedirectoryrestapi.services.ErrorHandler;
-import com.nortal.activedirectoryrestapi.services.JSONHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
