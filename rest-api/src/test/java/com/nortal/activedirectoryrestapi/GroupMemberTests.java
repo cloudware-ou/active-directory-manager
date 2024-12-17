@@ -1,7 +1,7 @@
 package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
@@ -77,7 +77,7 @@ public class GroupMemberTests {
         queryParams.add("Identity", "CN=gruppp,CN=Users,DC=Domain,DC=ee");
 
         String mockCommand = "Get-ADGroupMember";
-        Commands command = new Commands();
+        Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
         command.setExitCode(0);
@@ -103,7 +103,7 @@ public class GroupMemberTests {
                 + "\"Members\": \"" + memberSamAccountName + "\""
                 + "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("Add-ADGroupMember");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -121,7 +121,7 @@ public class GroupMemberTests {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("Add-ADGroupMember", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());

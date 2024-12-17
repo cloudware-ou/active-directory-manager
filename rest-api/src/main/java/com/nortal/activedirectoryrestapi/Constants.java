@@ -1,5 +1,10 @@
 package com.nortal.activedirectoryrestapi;
 
+import org.postgresql.PGNotification;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 public class Constants {
     public static final String NEW_USER = "New-ADUser";
     public static final String GET_USER = "Get-ADUser";

@@ -1,7 +1,7 @@
 package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
@@ -46,36 +46,6 @@ public class AccountManagementTests {
     public void setUp() throws Exception {
         helper.createTestUser(getBaseUrl() + "/users", commandWorker);
         restTemplate = new TestRestTemplate();
-//
-//        // Create a test user
-//        String payload = "{" +
-//                "\"Name\": \"TestUserAcc\"," +
-//                "\"GivenName\": \"TestUser\"," +
-//                "\"Surname\": \"Acc\"," +
-//                "\"SamAccountName\": \"TestUserAcc\"," +
-//                "\"UserPrincipalName\": \"TestUserAcc@domain.com\"," +
-//                "\"Path\": \"CN=Users,DC=Domain,DC=ee\"," +
-//                "\"Enabled\": true," +
-//                "\"AccountPassword\": \"ComplexP@ssw0rd123\"" +
-//                "}";
-//
-//        Commands mockCommand = new Commands();
-//        mockCommand.setCommand("New-ADUser");
-//        mockCommand.setArguments(payload);
-//        mockCommand.setExitCode(0);
-//        mockCommand.setId(8L);
-//
-//        when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCommand);
-//        when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
-//
-//        String url = getBaseUrl() + "/users";
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
-//
-//        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-//
-//        assertEquals(HttpStatus.CREATED, response.getStatusCode());
         createdUserSamAccountName = "testuser";
     }
 
@@ -94,7 +64,7 @@ public class AccountManagementTests {
                 "\"OldPassword\": \"ComplexP@ssw0rd4567\"" +
                 "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("Set-ADAccountPassword");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -112,7 +82,7 @@ public class AccountManagementTests {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("Set-ADAccountPassword", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
@@ -125,7 +95,7 @@ public class AccountManagementTests {
                 "\"Identity\": \"testuser\"" +
                 "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("Enable-ADAccount");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -143,7 +113,7 @@ public class AccountManagementTests {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("Enable-ADAccount", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
@@ -156,7 +126,7 @@ public class AccountManagementTests {
                 "\"Identity\": \"testuser\"" +
                 "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("Disable-ADAccount");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -174,7 +144,7 @@ public class AccountManagementTests {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("Disable-ADAccount", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());

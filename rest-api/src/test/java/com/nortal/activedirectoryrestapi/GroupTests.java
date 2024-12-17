@@ -1,7 +1,7 @@
 package com.nortal.activedirectoryrestapi;
 
 import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.services.CommandService;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
@@ -69,7 +69,7 @@ public class GroupTests {
 
         createdGroupName = "TestGroup1";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -87,7 +87,7 @@ public class GroupTests {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
-        Commands savedCommand = commandService.getCommand(mockCommand.getId());
+        Command savedCommand = commandService.getCommand(mockCommand.getId());
         assertNotNull(savedCommand);
         assertEquals("New-ADGroup", savedCommand.getCommand());
         assertEquals(payload, savedCommand.getArguments());
@@ -97,29 +97,6 @@ public class GroupTests {
     @Test
     public void testUpdateGroup() throws Exception {
         helper.createGroup(getBaseUrl()+"/groups", commandWorker);
-//        String payload = "{" +
-//                "\"Name\": \"TestGroup3\"," +
-//                "\"GroupScope\": \"Global\"," +
-//                "\"GroupCategory\": \"Security\"" +
-//                "}";
-//
-//        createdGroupName = "TestGroup3";
-//
-//        Commands mockCreateCommand = new Commands();
-//        mockCreateCommand.setCommand("New-ADGroup");
-//        mockCreateCommand.setArguments(payload);
-//        mockCreateCommand.setExitCode(0);
-//        mockCreateCommand.setId(5L);
-//
-//        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCreateCommand);
-//        when(commandService.getCommand(mockCreateCommand.getId())).thenReturn(mockCreateCommand);
-//
-//        String createUrl = getBaseUrl() + "/groups";
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
-//
-//        ResponseEntity<String> createResponse = restTemplate.exchange(createUrl, HttpMethod.POST, entity, String.class);
 
         String updatePayload = "{" +
                 "\"Identity\": \"TestGroup2\"," +
@@ -129,7 +106,7 @@ public class GroupTests {
 
         createdGroupName = "TestGroup2";
 
-        Commands mockUpdateCommand = new Commands();
+        Command mockUpdateCommand = new Command();
         mockUpdateCommand.setCommand("Set-ADGroup");
         mockUpdateCommand.setArguments(updatePayload);
         mockUpdateCommand.setExitCode(0);
@@ -155,7 +132,7 @@ public class GroupTests {
         queryParams.add("SearchBase", "DC=Domain,DC=ee");
 
         String mockCommand = "Get-ADGroup";
-        Commands command = new Commands();
+        Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
         command.setExitCode(0);

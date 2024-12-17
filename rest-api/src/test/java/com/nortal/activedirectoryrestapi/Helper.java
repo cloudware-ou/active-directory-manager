@@ -1,6 +1,6 @@
 package com.nortal.activedirectoryrestapi;
 
-import com.nortal.activedirectoryrestapi.entities.Commands;
+import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -46,7 +46,7 @@ public class Helper {
                 + "}";
 
 
-        Commands mockCreateCommand = new Commands();
+        Command mockCreateCommand = new Command();
         mockCreateCommand.setCommand("New-ADUser");
         mockCreateCommand.setArguments(payload);
         mockCreateCommand.setExitCode(0);
@@ -70,7 +70,7 @@ public class Helper {
                 "\"GroupCategory\": \"Security\"" +
                 "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
@@ -94,7 +94,7 @@ public class Helper {
                 + "\"Members\": \"" + memberSamAccountName + "\""
                 + "}";
 
-        Commands mockCommand = new Commands();
+        Command mockCommand = new Command();
         mockCommand.setCommand("Add-ADGroupMember");
         mockCommand.setArguments(payload);
         mockCommand.setExitCode(0);
