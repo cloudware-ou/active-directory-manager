@@ -1,5 +1,6 @@
 package com.nortal.activedirectoryrestapi.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.nortal.activedirectoryrestapi.Constants;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +22,7 @@ public class RESTApiController {
 
     @Operation(summary = "Create a new user (New-ADUser)")
     @PostMapping("/users")
-    public ResponseEntity<String> newUser(@RequestBody String payload) {
+    public ResponseEntity<String> newUser(@RequestBody JsonNode payload) {
         return commandWorker.submitJob(Constants.NEW_USER, payload);
     }
 
@@ -33,7 +34,7 @@ public class RESTApiController {
 
     @Operation(summary = "Update user details (Set-ADUser)")
     @PutMapping("/users")
-    public ResponseEntity<String> updateUser(@RequestBody String payload) {
+    public ResponseEntity<String> updateUser(@RequestBody JsonNode payload) {
         return commandWorker.submitJob(Constants.SET_USER, payload);
     }
 
@@ -45,7 +46,7 @@ public class RESTApiController {
 
     @Operation(summary = "Create a new group (New-ADGroup)")
     @PostMapping("/groups")
-    public ResponseEntity<String> newGroup(@RequestBody String payload) {
+    public ResponseEntity<String> newGroup(@RequestBody JsonNode payload) {
         return commandWorker.submitJob(Constants.NEW_GROUP, payload);
     }
 
@@ -57,7 +58,7 @@ public class RESTApiController {
 
     @Operation(summary = "Update group details (Set-ADGroup)")
     @PutMapping("/groups")
-    public ResponseEntity<String> updateGroup(@RequestBody String payload) {
+    public ResponseEntity<String> updateGroup(@RequestBody JsonNode payload) {
         return commandWorker.submitJob(Constants.SET_GROUP, payload);
     }
 
@@ -69,7 +70,7 @@ public class RESTApiController {
 
     @Operation(summary = "Add group members (Add-ADGroupMember)")
     @PostMapping("/groups/members")
-    public ResponseEntity<String> addGroupMember(@RequestBody String payload) {
+    public ResponseEntity<String> addGroupMember(@RequestBody JsonNode payload) {
         return commandWorker.submitJob(Constants.ADD_GROUP_MEMBER, payload);
     }
 
@@ -81,19 +82,19 @@ public class RESTApiController {
 
     @Operation(summary = "Enable Active Directory account (Enable-ADAccount)")
     @PutMapping("/accounts/enable")
-    public ResponseEntity<String> enableAccount(@RequestBody String payload){
+    public ResponseEntity<String> enableAccount(@RequestBody JsonNode payload){
         return commandWorker.submitJob(Constants.ENABLE_ACCOUNT, payload);
     }
 
     @Operation(summary = "Disable Active Directory account (Disable-ADAccount)")
     @PutMapping("/accounts/disable")
-    public ResponseEntity<String> disableAccount(@RequestBody String payload){
+    public ResponseEntity<String> disableAccount(@RequestBody JsonNode payload){
         return commandWorker.submitJob(Constants.DISABLE_ACCOUNT, payload);
     }
 
     @Operation(summary = "Change/Reset Active Directory account password (Set-ADAccountPassword)")
     @PutMapping("/accounts/password")
-    public ResponseEntity<String> setAccountPassword(@RequestBody String payload){
+    public ResponseEntity<String> setAccountPassword(@RequestBody JsonNode payload){
         return commandWorker.submitJob(Constants.SET_ACCOUNT_PASSWORD, payload);
     }
 }

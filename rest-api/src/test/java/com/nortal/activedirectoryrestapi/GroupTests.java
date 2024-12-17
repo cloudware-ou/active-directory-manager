@@ -43,7 +43,7 @@ public class GroupTests {
     private String getBaseUrl() {
         return "http://localhost:" + port;
     }
-    private Helper helper = new Helper();
+    private final Helper helper = new Helper();
 
     @BeforeEach
     public void setUp() {
@@ -72,8 +72,6 @@ public class GroupTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(4L);
 
         when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
@@ -109,8 +107,6 @@ public class GroupTests {
         Command mockUpdateCommand = new Command();
         mockUpdateCommand.setCommand("Set-ADGroup");
         mockUpdateCommand.setArguments(updatePayload);
-        mockUpdateCommand.setExitCode(0);
-        mockUpdateCommand.setId(6L);
 
         when(commandWorker.executeCommand("Set-ADGroup", updatePayload)).thenReturn(mockUpdateCommand);
         when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
@@ -135,7 +131,6 @@ public class GroupTests {
         Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
-        command.setExitCode(0);
 
         String mockJson = "{\"Filter\":\"*\",\"SearchBase\":\"DC=Domain,DC=ee\"}";
         when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);

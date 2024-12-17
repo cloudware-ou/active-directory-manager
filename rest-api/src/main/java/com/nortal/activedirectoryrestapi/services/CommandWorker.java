@@ -1,6 +1,8 @@
 package com.nortal.activedirectoryrestapi.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nortal.activedirectoryrestapi.Constants;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
@@ -50,13 +52,8 @@ public class CommandWorker {
         }
     }
 
-    public ResponseEntity<String> submitJob(String command, String payload){
-        try {
-            jsonHandler.validateJson(payload);
-            return submitJobMeta(command, payload);
-        }catch (JsonProcessingException e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> submitJob(String command, JsonNode payload){
+            return submitJobMeta(command, payload.toPrettyString());
     }
 
     public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){

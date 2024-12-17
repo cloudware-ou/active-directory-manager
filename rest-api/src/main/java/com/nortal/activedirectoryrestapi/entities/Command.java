@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 @Table(name="commands")
 public class Command {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotNull

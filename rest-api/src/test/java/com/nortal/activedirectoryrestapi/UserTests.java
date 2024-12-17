@@ -76,8 +76,6 @@ public class UserTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("New-ADUser");
         mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(1L);
 
         when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
@@ -115,8 +113,6 @@ public class UserTests {
         Command mockUpdateCommand = new Command();
         mockUpdateCommand.setCommand("Set-ADUser");
         mockUpdateCommand.setArguments(updatePayload);
-        mockUpdateCommand.setExitCode(0);
-        mockUpdateCommand.setId(3L);
 
         when(commandWorker.executeCommand("Set-ADUser", updatePayload)).thenReturn(mockUpdateCommand);
         when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
@@ -142,7 +138,6 @@ public class UserTests {
         Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
-        command.setExitCode(0);
 
         String mockJson = "{\"Filter\":\"*\",\"SearchBase\":\"DC=Domain,DC=ee\"}";
         when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);

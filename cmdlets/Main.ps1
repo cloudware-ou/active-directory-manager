@@ -171,8 +171,13 @@ function Invoke-ADCommand {
         }
 
         # Convert the result to a string representation
-        $resultString = if ($result) { 
-            $result | ConvertTo-Json -AsArray
+        $resultString = if ($result) {
+            if ($exitCode -eq 0){
+                $result | ConvertTo-Json -AsArray
+            } else {
+                $result
+            }
+            
         } else {
             @{
                 Message  = "The command $ADCommand completed successfully with no output." 

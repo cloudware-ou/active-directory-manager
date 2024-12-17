@@ -18,10 +18,4 @@ public class JSONHandler {
                                 entry -> entry.getValue().size() == 1 ? entry.getValue().getFirst() : entry.getValue()
                         )));
     }
-
-    public void validateJson(String json) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.readTree(json);
-    }
-
 }
