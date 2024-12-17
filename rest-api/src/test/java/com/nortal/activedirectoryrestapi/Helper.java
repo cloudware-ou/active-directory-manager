@@ -49,6 +49,8 @@ public class Helper {
         Command mockCreateCommand = new Command();
         mockCreateCommand.setCommand("New-ADUser");
         mockCreateCommand.setArguments(payload);
+        mockCreateCommand.setExitCode(0);
+        mockCreateCommand.setId(2L);
 
         when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
 
@@ -71,6 +73,8 @@ public class Helper {
         Command mockCommand = new Command();
         mockCommand.setCommand("New-ADGroup");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(4L);
 
         when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
 
@@ -93,6 +97,8 @@ public class Helper {
         Command mockCommand = new Command();
         mockCommand.setCommand("Add-ADGroupMember");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(12L);
 
         when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
 

@@ -67,6 +67,8 @@ public class AccountManagementTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("Set-ADAccountPassword");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(9L);
 
         when(commandWorker.executeCommand("Set-ADAccountPassword", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
@@ -96,6 +98,8 @@ public class AccountManagementTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("Enable-ADAccount");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(2L);
 
         when(commandWorker.executeCommand("Enable-ADAccount", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
@@ -125,6 +129,8 @@ public class AccountManagementTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("Disable-ADAccount");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(3L);
 
         when(commandWorker.executeCommand("Disable-ADAccount", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);

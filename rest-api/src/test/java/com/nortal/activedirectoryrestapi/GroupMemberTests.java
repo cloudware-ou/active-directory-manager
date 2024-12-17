@@ -80,6 +80,7 @@ public class GroupMemberTests {
         Command command = new Command();
         command.setCommand(mockCommand);
         command.setArguments(queryParams.toString());
+        command.setExitCode(0);
 
         String mockJson = "{\"Identity\":\"CN=gruppp,CN=Users,DC=Domain,DC=ee\"}";
         when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);
@@ -105,6 +106,8 @@ public class GroupMemberTests {
         Command mockCommand = new Command();
         mockCommand.setCommand("Add-ADGroupMember");
         mockCommand.setArguments(payload);
+        mockCommand.setExitCode(0);
+        mockCommand.setId(12L);
 
         when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
         when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
