@@ -23,6 +23,7 @@ public class CommandWorker {
     private final JSONHandler jsonHandler;
     private final ErrorHandler errorHandler;
     private final NotificationListener notificationListener;
+    private final CryptoService cryptoService;
 
     public Command waitForResult(Long id) throws InterruptedException {
         return notificationListener.getCompletedCommand(id);
@@ -53,7 +54,8 @@ public class CommandWorker {
     }
 
     public ResponseEntity<String> submitJob(String command, JsonNode payload){
-            return submitJobMeta(command, payload.toPrettyString());
+        // TODO encrypt password fields here
+        return submitJobMeta(command, payload.toPrettyString());
     }
 
     public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){

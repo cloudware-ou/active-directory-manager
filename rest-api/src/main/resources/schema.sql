@@ -1,11 +1,14 @@
 DROP TRIGGER IF EXISTS notify_insert ON commands;
 DROP TRIGGER IF EXISTS notify_update ON commands;
-DROP FUNCTION IF EXISTS notify_insert_event();
-DROP FUNCTION IF EXISTS notify_update_event();
+DROP TRIGGER IF EXISTS notify_one_time_keys_alice ON one_time_keys;
+DROP TRIGGER IF EXISTS notify_one_time_keys_bob ON one_time_keys;
+DROP FUNCTION IF EXISTS notify_new_commands();
+DROP FUNCTION IF EXISTS notify_completed_commands();
+drop function if exists notify_one_time_keys();
 
 
 -- Create a function to send notifications for INSERT
-CREATE OR REPLACE FUNCTION notify_insert_event() RETURNS trigger AS '
+CREATE OR REPLACE FUNCTION notify_new_commands() RETURNS trigger AS '
 BEGIN
     IF NEW.command_status = ''PENDING'' THEN
         PERFORM pg_notify(''new_commands'', NEW.id::text);
@@ -15,7 +18,7 @@ END;
 ' LANGUAGE plpgsql;
 
 -- Create a function to send notifications for UPDATE
-CREATE OR REPLACE FUNCTION notify_update_event() RETURNS trigger AS '
+CREATE OR REPLACE FUNCTION notify_completed_commands() RETURNS trigger AS '
 BEGIN
     IF NEW.command_status = ''COMPLETED'' THEN
         PERFORM pg_notify(''completed_commands'', NEW.id::text);
@@ -24,14 +27,28 @@ BEGIN
 END;
 ' LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION notify_one_time_keys() RETURNS trigger AS '
+    BEGIN
+        PERFORM pg_notify(TG_ARGV[0], NEW.id::text);
+        RETURN NEW;
+    END;
+' LANGUAGE plpgsql;
+
+
 -- Create a trigger for INSERT operations
 CREATE TRIGGER notify_insert
     AFTER INSERT ON commands
-    FOR EACH ROW EXECUTE FUNCTION notify_insert_event();
+    FOR EACH ROW EXECUTE FUNCTION notify_new_commands();
 
 -- Create a trigger for UPDATE operations
 CREATE TRIGGER notify_update
     AFTER UPDATE ON commands
-    FOR EACH ROW EXECUTE FUNCTION notify_update_event();
+    FOR EACH ROW EXECUTE FUNCTION notify_completed_commands();
 
-NOTIFY insert_channel, 'test_message';
+CREATE TRIGGER notify_one_time_keys_alice
+    AFTER insert ON one_time_keys
+    FOR EACH ROW EXECUTE FUNCTION notify_one_time_keys('one_time_keys_alice');
+
+CREATE TRIGGER notify_one_time_keys_bob
+    AFTER update ON one_time_keys
+    FOR EACH ROW EXECUTE FUNCTION notify_one_time_keys('one_time_keys_bob');

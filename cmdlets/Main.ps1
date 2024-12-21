@@ -191,29 +191,84 @@ function Invoke-ADCommand {
     }
 }
 
+function Get-Key {
+    param (
+        [Parameter(Mandatory)]
+        [Npgsql.NpgsqlConnection]$conn,
+        [string]$Id
+    )
+    # Generate key pair
+    $bobECDH = [System.Security.Cryptography.ECDiffieHellman]::Create([System.Security.Cryptography.ECCurve]::CreateFromFriendlyName("nistP256"))
+    $bobPublicKey = $bobECDH.ExportParameters($false)
+
+    $query = "SELECT alice_x, alice_y FROM one_time_keys WHERE id = $Id;"
+    $cmd = $Connection.CreateCommand()
+    $cmd.CommandText = $query
+    $reader = $cmd.ExecuteReader()
+    $aliceX = ""
+    $aliceY = ""
+    if ($reader.Read()) {
+        $aliceX = $reader["alice_x"]
+        $aliceY = $reader["alice_y"]
+    }
+    $reader.Close()
+
+    $alicePublicKey = [System.Security.Cryptography.ECParameters]@{
+        Curve = [System.Security.Cryptography.ECCurve]::NamedCurves.nistP256
+        Q = [System.Security.Cryptography.ECPoint]@{
+            X = $aliceX
+            Y = $aliceY
+        }
+    }
+
+    $aliceECDH = [System.Security.Cryptography.ECDiffieHellmanPublicKey]::Create($alicePublicKey)
+    $sharedSecret = $bobECDH.DeriveKeyMaterial($aliceECDH)
+
+    # Convert to Base64 for display or further use
+    $sharedSecretBase64 = [Convert]::ToBase64String($sharedSecret)
+    
+    Write-Host "Shared Secret (Base64): $sharedSecretBase64"
+
+    # Share $bobPublicKey with Alice
+    $alicePublicKey = ... # Alice's public key from the public channel
+
+    # Compute shared secret
+    $sharedSecret = $bobECDH.DeriveKeyMaterial([System.Security.Cryptography.ECDiffieHellmanPublicKey]::Import($alicePublicKey))
+
+    # Use a KDF to derive encryption keys
+
+}
+
 $notificationHandler = {
     param($origin, $payload)
     $id = $($payload.Payload)
     $channel = $($payload.Channel)
-    Write-Host "Received notification from channel $channel for command ID $id"
+    Write-Host "Received notification from channel $channel with payload $id"
     $conn = Get-PostgreSQLConnection
 
-    $commands = Get-PendingCommands -Connection $conn -Id $id
+    if ($channel -eq 'one_time_keys_alice'){
+        Get-Key -Connection $conn -Id $id
 
-    if ($commands.Count -gt 0) {
-        foreach ($cmd in $commands) {
-            # Update status to PROCESSING
-            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+    } elseif ($channel -eq 'new_command') {
+        $commands = Get-PendingCommands -Connection $conn -Id $id
 
-            Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-            $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
-
-            # Update status to DONE with result
-            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
-
-            Write-Host "Command ID $($cmd.Id) executed and updated with result."
+        if ($commands.Count -gt 0) {
+            foreach ($cmd in $commands) {
+                # Update status to PROCESSING
+                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+    
+                Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
+                $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
+    
+                # Update status to DONE with result
+                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
+    
+                Write-Host "Command ID $($cmd.Id) executed and updated with result."
+            }
         }
     }
+
+
 }
 
 try {
