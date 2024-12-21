@@ -87,12 +87,14 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
   "SearchBase": "DC=Domain,DC=ee"
 }
 ```
-
+- **Example for getting a single user:**
 ```json
 {
     "Identity": "CN=Ryan Gosling,CN=Users,DC=Domain,DC=ee"
 }
 ```
+
+- **Other payloads:**
 
 /groups - POST
 ```json
