@@ -105,7 +105,7 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
  "Path": "CN=Users,DC=Domain,DC=ee",
  "Description": "Members of this group are part of Drive movie cast"
 }
-
+```
 /groups/members - POST
 ```json
 {
@@ -121,9 +121,6 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
 }
 ```
 
-```json
-
-```
 ### 8. View Command Output
 After command execution, you will see the command output (in JSON format) together with a relevant status code in the Swagger UI response. 
 
