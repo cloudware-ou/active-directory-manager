@@ -20,7 +20,10 @@ db_name=active_directory_commands
 db_port=5432
 ```
 ### 3. Start the Spring Boot Application
-Run the Spring Boot application.
+Go to the `rest-api` folder and run the app:
+```bash
+./gradlew bootRun
+```
 
 ### 4. Build Docker Image
 Go to the `cmdlets` folder and build the Docker image using the following command (`docker` is substitutable with `podman` in this and the following steps):
@@ -60,15 +63,16 @@ You can access the Swagger UI at:
 ### 7. Make a HTTP request
 The payload (or query parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Switch parameters should have a 'true' value. Refer to [Active Directory Module documentation] (https://learn.microsoft.com/en-us/powershell/module/activedirectory/) for the reference. The only known exceptions to the documentation are passwords (AccountPassword, OldPassword, NewPassword), which have to be specified as plaintext (as shown here) and later converted to PowerShell SecureString by the app. **Please note that passwords supplied this way are not secure and should be changed on first log on.**
 
+## Example payloads
+
 - **Example for Adding a New User:**
 /users - POST
 ```json
 {
-  "Name": "Aliwfededece Johnson",
-  "GivenName": "Alifewce",
-  "Surname": "Johnfewfsfeson",
-  "SamAccountName": "ajofededewhnson012",
-  "UserPrincipalName": "ajohnfewdedenson02@domain.com",
+  "Name": "Ryan Gosling",
+  "GivenName": "Ryan",
+  "Surname": "Gosling",
+  "SamAccountName": "ryangosling",
   "Path": "CN=Users,DC=Domain,DC=ee", 
   "Enabled": true,
   "AccountPassword": "ComplexP@ssw0rd4567"
@@ -84,7 +88,42 @@ The payload (or query parameters in case of GET/DELETE requests) should contain 
 }
 ```
 
+```json
+{
+    "Identity": "CN=Ryan Gosling,CN=Users,DC=Domain,DC=ee"
+}
+```
 
+/groups - POST
+```json
+{
+ "Name": "Drive Cast",
+ "SamAccountName": "DriveCast",
+ "GroupCategory": "Security",
+ "GroupScope": "Global",
+ "DisplayName": "Drive Cast",
+ "Path": "CN=Users,DC=Domain,DC=ee",
+ "Description": "Members of this group are part of Drive movie cast"
+}
+
+/groups/members - POST
+```json
+{
+    "Identity": "CN=Drive Cast,CN=Users,DC=Domain,DC=ee",
+    "Members": ["CN=Ryan Gosling,CN=Users,DC=Domain,DC=ee"]
+}
+```
+
+/groups - GET
+```json
+{
+    "Identity": "CN=Drive Cast,CN=Users,DC=Domain,DC=ee"
+}
+```
+
+```json
+
+```
 ### 8. View Command Output
 After command execution, you will see the command output (in JSON format) together with a relevant status code in the Swagger UI response. 
 
