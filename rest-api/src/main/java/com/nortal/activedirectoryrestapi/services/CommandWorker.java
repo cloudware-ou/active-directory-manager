@@ -40,6 +40,7 @@ public class CommandWorker {
     }
 
     public ResponseEntity<String> submitJobMeta(String command, String validJson){
+        cryptoService.generateKeys(); // move from here
         try {
             HttpStatusCode httpStatusCode = HttpStatus.OK;
             if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
@@ -55,6 +56,7 @@ public class CommandWorker {
 
     public ResponseEntity<String> submitJob(String command, JsonNode payload){
         // TODO encrypt password fields here
+
         return submitJobMeta(command, payload.toPrettyString());
     }
 

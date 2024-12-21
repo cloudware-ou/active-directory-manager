@@ -194,48 +194,47 @@ function Invoke-ADCommand {
 function Get-Key {
     param (
         [Parameter(Mandatory)]
-        [Npgsql.NpgsqlConnection]$conn,
+        [Npgsql.NpgsqlConnection]$Connection,
         [string]$Id
     )
-    # Generate key pair
-    $bobECDH = [System.Security.Cryptography.ECDiffieHellman]::Create([System.Security.Cryptography.ECCurve]::CreateFromFriendlyName("nistP256"))
-    $bobPublicKey = $bobECDH.ExportParameters($false)
+    try {
+        # Generate key pair
+        $bobECDH = [System.Security.Cryptography.ECDiffieHellman]::Create([System.Security.Cryptography.ECCurve]::CreateFromFriendlyName("nistP256"))
+        
+        $query = "SELECT alice_public_key FROM one_time_keys WHERE id = $Id;"
+        $cmd = $Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $reader = $cmd.ExecuteReader()
 
-    $query = "SELECT alice_x, alice_y FROM one_time_keys WHERE id = $Id;"
-    $cmd = $Connection.CreateCommand()
-    $cmd.CommandText = $query
-    $reader = $cmd.ExecuteReader()
-    $aliceX = ""
-    $aliceY = ""
-    if ($reader.Read()) {
-        $aliceX = $reader["alice_x"]
-        $aliceY = $reader["alice_y"]
+        $reader.Read()
+        $alicePublicKeyBytes = [Convert]::FromBase64String($reader["alice_public_key"])
+        $reader.Close()
+
+        # Create an ECDiffieHellman object and import the public key parameters
+        $aliceECDH = [System.Security.Cryptography.ECDiffieHellman]::Create()
+        $aliceECDH.ImportSubjectPublicKeyInfo($alicePublicKeyBytes, [ref]0) 
+
+        # Derive the shared secret using Bob's ECDH object
+        $sharedSecret = $bobECDH.DeriveKeyMaterial($aliceECDH.PublicKey)
+
+        # Convert to Base64 for display or further use
+        $sharedSecretBase64 = [Convert]::ToBase64String($sharedSecret)
+
+        Write-Host "Shared Secret (Base64): $sharedSecretBase64"
+
+        $bobPublicKeyBase64 = [Convert]::ToBase64String($bobECDH.ExportSubjectPublicKeyInfo())
+
+        $query += "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
+        $cmd = $Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@BobPublicKey", $bobPublicKeyBase64))) | Out-Null
+        #$cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Id", $Id))) | Out-Null
+        $cmd.ExecuteNonQuery() | Out-Null
+
+    } catch {
+        Write-Error "An error occurred: $_"
     }
-    $reader.Close()
 
-    $alicePublicKey = [System.Security.Cryptography.ECParameters]@{
-        Curve = [System.Security.Cryptography.ECCurve]::NamedCurves.nistP256
-        Q = [System.Security.Cryptography.ECPoint]@{
-            X = $aliceX
-            Y = $aliceY
-        }
-    }
-
-    $aliceECDH = [System.Security.Cryptography.ECDiffieHellmanPublicKey]::Create($alicePublicKey)
-    $sharedSecret = $bobECDH.DeriveKeyMaterial($aliceECDH)
-
-    # Convert to Base64 for display or further use
-    $sharedSecretBase64 = [Convert]::ToBase64String($sharedSecret)
-    
-    Write-Host "Shared Secret (Base64): $sharedSecretBase64"
-
-    # Share $bobPublicKey with Alice
-    $alicePublicKey = ... # Alice's public key from the public channel
-
-    # Compute shared secret
-    $sharedSecret = $bobECDH.DeriveKeyMaterial([System.Security.Cryptography.ECDiffieHellmanPublicKey]::Import($alicePublicKey))
-
-    # Use a KDF to derive encryption keys
 
 }
 
@@ -249,7 +248,7 @@ $notificationHandler = {
     if ($channel -eq 'one_time_keys_alice'){
         Get-Key -Connection $conn -Id $id
 
-    } elseif ($channel -eq 'new_command') {
+    } elseif ($channel -eq 'new_commands') {
         $commands = Get-PendingCommands -Connection $conn -Id $id
 
         if ($commands.Count -gt 0) {
@@ -280,7 +279,7 @@ try {
     Write-Host "Listening to the database..."
 
     $listenCommand = $conn.CreateCommand()
-    $listenCommand.CommandText = "LISTEN new_commands;"
+    $listenCommand.CommandText = "LISTEN new_commands; LISTEN one_time_keys_alice;"
     $listenCommand.ExecuteNonQuery() >> $null
 
     $conn.add_Notification($notificationHandler)

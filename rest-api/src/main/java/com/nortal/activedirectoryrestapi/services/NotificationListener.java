@@ -39,7 +39,7 @@ public class NotificationListener {
 
                 while (!Thread.currentThread().isInterrupted()) {
                     // Wait for notifications
-                    PGNotification[] nts = pgConnection.getNotifications(0);
+                    PGNotification[] nts = pgConnection.getNotifications(10000);
                     if (nts == null) {
                         continue;
                     }
@@ -50,7 +50,7 @@ public class NotificationListener {
                                 Command command = commandService.getCommand(id);
                                 getCompletedCommandsQueue(id).add(command);
                                 break;
-                            case "bob_public_key":
+                            case "one_time_keys_bob":
                                 OneTimeKeys oneTimeKeys = oneTimeKeysService.getOneTimeKeys(id);
                                 getOneTimeKeysQueue(id).add(oneTimeKeys);
                         }

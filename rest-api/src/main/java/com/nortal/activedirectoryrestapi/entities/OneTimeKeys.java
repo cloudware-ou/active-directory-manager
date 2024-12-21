@@ -12,12 +12,8 @@ public class OneTimeKeys {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "alice_x")
-    String aliceX;
-    @Column(name = "alice_y")
-    String aliceY;
-    @Column(name = "bob_x")
-    String bobX;
-    @Column(name = "bob_y")
-    String bobY;
+    @Column(name = "alice_public_key")
+    String alicePublicKey;
+    @Column(name = "bob_public_key")
+    String bobPublicKey;
 }

@@ -13,10 +13,9 @@ public class OneTimeKeysService {
     private EntityManager entityManager;
 
     @Transactional
-    public Long saveOneTimeKeys(String AliceX, String AliceY) {
+    public Long saveOneTimeKeys(String alicePublicKey) {
         OneTimeKeys oneTimeKeys = new OneTimeKeys();
-        oneTimeKeys.setAliceX(AliceX);
-        oneTimeKeys.setAliceY(AliceY);
+        oneTimeKeys.setAlicePublicKey(alicePublicKey);
         entityManager.persist(oneTimeKeys);
         entityManager.flush();  // Ensure the entity is saved immediately
         return oneTimeKeys.getId();

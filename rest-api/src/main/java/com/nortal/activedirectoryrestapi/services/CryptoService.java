@@ -19,41 +19,23 @@ public class CryptoService {
     private final NotificationListener notificationListener;
     private final OneTimeKeysService oneTimeKeysService;
 
-    @PostConstruct
     public void generateKeys() {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
             kpg.initialize(new ECGenParameterSpec("secp256r1"));
             KeyPair aliceKeyPair = kpg.generateKeyPair();
 
+            String alicePublicKeyBase64 = Base64.getEncoder().encodeToString(aliceKeyPair.getPublic().getEncoded());
 
-            ECPublicKey alicePublicKey = (ECPublicKey) aliceKeyPair.getPublic();
+            Long id = oneTimeKeysService.saveOneTimeKeys(alicePublicKeyBase64);
 
-            String AliceX = Base64.getEncoder().encodeToString(alicePublicKey.getW().getAffineX().toByteArray());
-            String AliceY = Base64.getEncoder().encodeToString(alicePublicKey.getW().getAffineY().toByteArray());
-
-            Long id = oneTimeKeysService.saveOneTimeKeys(AliceX, AliceY);
-            System.out.println("Alice key: " + AliceX + " and alice key: " + AliceY);
             OneTimeKeys oneTimeKeys = notificationListener.getOneTimeKeys(id);
-            System.out.println("here");
 
-            String bobX = oneTimeKeys.getBobX();
-            String bobY = oneTimeKeys.getBobY();
-
-            AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
-            params.init(new ECGenParameterSpec("secp256r1"));
-            ECParameterSpec ecSpec = params.getParameterSpec(ECParameterSpec.class);
-
-            // Create the ECPoint and ECPublicKeySpec
-            byte[] xBytes = Base64.getDecoder().decode(bobX);
-            byte[] yBytes = Base64.getDecoder().decode(bobY);
-
-            BigInteger x = new BigInteger(1, xBytes);
-            BigInteger y = new BigInteger(1, yBytes);
-            ECPoint point = new ECPoint(x, y);
-            ECPublicKeySpec pubKeySpec = new ECPublicKeySpec(point, ecSpec);
+            String bobPublicKeyBase64 = oneTimeKeys.getBobPublicKey();
+            byte[] bobPublicKeyBytes = Base64.getDecoder().decode(bobPublicKeyBase64);
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            PublicKey bobPublicKey = keyFactory.generatePublic(pubKeySpec);
+            X509EncodedKeySpec bobKeySpec = new X509EncodedKeySpec(bobPublicKeyBytes);
+            PublicKey bobPublicKey = keyFactory.generatePublic(bobKeySpec);
 
             // Compute shared secret
             KeyAgreement ka = KeyAgreement.getInstance("ECDH");
