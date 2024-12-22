@@ -1,14 +1,11 @@
 package com.nortal.activedirectoryrestapi.services;
 
 import com.nortal.activedirectoryrestapi.entities.OneTimeKeys;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyAgreement;
-import java.math.BigInteger;
 import java.security.*;
-import java.security.interfaces.ECPublicKey;
 import java.security.spec.*;
 import java.util.Base64;
 
@@ -21,10 +18,8 @@ public class CryptoService {
 
     public void generateKeys() {
         try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
-            kpg.initialize(new ECGenParameterSpec("secp256r1"));
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
             KeyPair aliceKeyPair = kpg.generateKeyPair();
-
             String alicePublicKeyBase64 = Base64.getEncoder().encodeToString(aliceKeyPair.getPublic().getEncoded());
 
             Long id = oneTimeKeysService.saveOneTimeKeys(alicePublicKeyBase64);
@@ -33,12 +28,13 @@ public class CryptoService {
 
             String bobPublicKeyBase64 = oneTimeKeys.getBobPublicKey();
             byte[] bobPublicKeyBytes = Base64.getDecoder().decode(bobPublicKeyBase64);
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
+
+            KeyFactory keyFactory = KeyFactory.getInstance("X25519");
             X509EncodedKeySpec bobKeySpec = new X509EncodedKeySpec(bobPublicKeyBytes);
             PublicKey bobPublicKey = keyFactory.generatePublic(bobKeySpec);
 
             // Compute shared secret
-            KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+            KeyAgreement ka = KeyAgreement.getInstance("X25519");
             ka.init(aliceKeyPair.getPrivate());
             ka.doPhase(bobPublicKey, true);
 

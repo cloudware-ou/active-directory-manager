@@ -11,7 +11,6 @@ public class OneTimeKeys {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(name = "alice_public_key")
     String alicePublicKey;
     @Column(name = "bob_public_key")

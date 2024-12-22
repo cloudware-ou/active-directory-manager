@@ -1,11 +1,7 @@
-# Define constants for assembly paths
-$NpgsqlPath = "./npgsql/lib/net8.0/Npgsql.dll"
-$LoggingAbstractionsPath = "./microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
-
-
 try {
-    Add-Type -Path $NpgsqlPath
-    Add-Type -Path $LoggingAbstractionsPath
+    Add-Type -Path "./npgsql/lib/net8.0/Npgsql.dll"
+    Add-Type -Path "./microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
+    Add-Type -Path "./sodium.core/lib/netstandard2.1/Sodium.Core.dll"
     Write-Verbose "Assemblies loaded successfully."
 } catch {
     Throw "Failed to load assemblies: $_"
@@ -198,8 +194,6 @@ function Get-Key {
         [string]$Id
     )
     try {
-        # Generate key pair
-        $bobECDH = [System.Security.Cryptography.ECDiffieHellman]::Create([System.Security.Cryptography.ECCurve]::CreateFromFriendlyName("nistP256"))
         
         $query = "SELECT alice_public_key FROM one_time_keys WHERE id = $Id;"
         $cmd = $Connection.CreateCommand()
@@ -207,22 +201,26 @@ function Get-Key {
         $reader = $cmd.ExecuteReader()
 
         $reader.Read()
-        $alicePublicKeyBytes = [Convert]::FromBase64String($reader["alice_public_key"])
+        $der = [Convert]::FromBase64String($reader["alice_public_key"])
         $reader.Close()
 
-        # Create an ECDiffieHellman object and import the public key parameters
-        $aliceECDH = [System.Security.Cryptography.ECDiffieHellman]::Create()
-        $aliceECDH.ImportSubjectPublicKeyInfo($alicePublicKeyBytes, [ref]0) 
+        $asnReader = [System.Formats.Asn1.AsnReader]::new($der, [System.Formats.Asn1.AsnEncodingRules]::DER)
+        $outerSequence = $asnReader.ReadSequence()
+        $outerSequence.ReadSequence()
+        $unusedBits = 0
+        $alicePublicKey = $outerSequence.ReadBitString([ref]$unusedBits)
 
-        # Derive the shared secret using Bob's ECDH object
-        $sharedSecret = $bobECDH.DeriveKeyMaterial($aliceECDH.PublicKey)
+        $bobKeyPair = [Sodium.PublicKeyBox]::GenerateKeyPair()
+        $bobPrivateKey = $bobKeyPair.PrivateKey
+        $bobPublicKey = $bobKeyPair.PublicKey
 
-        # Convert to Base64 for display or further use
+        $sharedSecret = [Sodium.ScalarMult]::Mult($bobPrivateKey, $alicePublicKey)
+
+        # Convert the shared secret to Base64 for display or further use
         $sharedSecretBase64 = [Convert]::ToBase64String($sharedSecret)
-
         Write-Host "Shared Secret (Base64): $sharedSecretBase64"
 
-        $bobPublicKeyBase64 = [Convert]::ToBase64String($bobECDH.ExportSubjectPublicKeyInfo())
+        $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKey)
 
         $query += "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
         $cmd = $Connection.CreateCommand()
