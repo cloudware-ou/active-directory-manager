@@ -5,6 +5,7 @@ import com.nortal.activedirectoryrestapi.Constants;
 import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class RESTApiController {
     @Operation(summary = "Create a new user (New-ADUser)")
     @PostMapping("/users")
     public ResponseEntity<String> newUser(@RequestBody JsonNode payload) {
-        return commandWorker.submitJob(Constants.NEW_USER, payload);
+        return commandWorker.submitJob(Constants.NEW_USER, payload, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Delete user (Remove-ADUser)")
@@ -47,7 +48,7 @@ public class RESTApiController {
     @Operation(summary = "Create a new group (New-ADGroup)")
     @PostMapping("/groups")
     public ResponseEntity<String> newGroup(@RequestBody JsonNode payload) {
-        return commandWorker.submitJob(Constants.NEW_GROUP, payload);
+        return commandWorker.submitJob(Constants.NEW_GROUP, payload, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Delete group (Remove-ADGroup)")

@@ -38,12 +38,8 @@ public class CommandWorker {
             }
     }
 
-    public ResponseEntity<String> submitJobMeta(String command, String validJson){
+    public ResponseEntity<String> submitJobMeta(String command, String validJson, HttpStatusCode httpStatusCode){
         try {
-            HttpStatusCode httpStatusCode = HttpStatus.OK;
-            if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
-                httpStatusCode = HttpStatus.CREATED;
-            }
             return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, validJson).getResult());
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
@@ -53,13 +49,17 @@ public class CommandWorker {
     }
 
     public ResponseEntity<String> submitJob(String command, JsonNode payload){
-            return submitJobMeta(command, payload.toPrettyString());
+            return submitJobMeta(command, payload.toPrettyString(), HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode){
+        return submitJobMeta(command, payload.toPrettyString(), httpStatusCode);
     }
 
     public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){
         try {
             String json = jsonHandler.convertToJson(params);
-            return submitJobMeta(command, json);
+            return submitJobMeta(command, json, HttpStatus.OK);
         }catch (JsonProcessingException e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
