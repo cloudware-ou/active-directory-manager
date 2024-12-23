@@ -4,8 +4,8 @@ RUN apt-get update && apt-get install -y wget libsodium-dev
 
 WORKDIR /app
 
-RUN wget -O mela.nupkg https://www.nuget.org/api/v2/package/Microsoft.Extensions.Logging.Abstractions/8.0.2
-RUN wget -O npgsql.nupkg https://www.nuget.org/api/v2/package/Npgsql/8.0.5
+RUN wget -O mela.nupkg https://www.nuget.org/api/v2/package/Microsoft.Extensions.Logging.Abstractions/9.0.0
+RUN wget -O npgsql.nupkg https://www.nuget.org/api/v2/package/Npgsql/9.0.2
 RUN wget -O sodium.core.nupkg https://www.nuget.org/api/v2/package/Sodium.Core/1.3.3
 
 RUN pwsh -Command 'Expand-Archive -Path "./sodium.core.nupkg" -DestinationPath "./sodium.core"'

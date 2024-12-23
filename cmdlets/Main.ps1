@@ -8,8 +8,7 @@ try {
 }
 
 $global:sharedSecret = $null
-$global:pssession = $null
-
+$global:privatekeyfile = "privatekey"
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
     try {
@@ -56,6 +55,16 @@ function Decrypt{
         $DecryptedData = $memoryStream.ToArray()
         $memoryStream.Close()
         
+
+
+        return [Text.Encoding]::UTF8.GetString($DecryptedData)
+    } catch {
+        Throw "An error occured: $_"
+    }
+}
+
+function EraseSharedSecret {
+    if ($null -ne $global:sharedSecret){
         # Erase shared secret
         for ($i = 0; $i -lt $global:sharedSecret.Length; $i++) {
             $global:sharedSecret[$i] = Get-Random -Minimum 0 -Maximum 256
@@ -63,10 +72,6 @@ function Decrypt{
         
         # Set the variable to null
         $global:sharedSecret = $null
-
-        return [Text.Encoding]::UTF8.GetString($DecryptedData)
-    } catch {
-        Throw "An error occured: $_"
     }
 }
 
@@ -190,12 +195,13 @@ function Invoke-ADCommand {
             }
         }
 
+        EraseSharedSecret
+
         $result = ""
         $exitCode = 0
-
         
         try {
-            $job = Invoke-Command -Session $global:pssession -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+            $job = Invoke-Command -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
             $job | Wait-Job -Timeout 30
             $invokeResult = Receive-Job -Job $job
             $result = $invokeResult[0]
@@ -320,7 +326,11 @@ $notificationHandler = {
 
 try {
 
-    $global:pssession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath "privatekey" -ConnectingTimeout 5000 -ErrorAction Stop
+    Write-Host "Attempting to connect to Active Directory..."
+    Invoke-Command -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -ConnectingTimeout 10000 -ErrorAction Stop -ScriptBlock {
+        Get-ADComputer -Filter *
+        Write-Host "Successfully connected to Active Directory!"
+    }
 
     $conn = Get-PostgreSQLConnection
 

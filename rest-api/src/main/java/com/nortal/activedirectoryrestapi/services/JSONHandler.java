@@ -45,6 +45,6 @@ public class JSONHandler {
                 }
             }
         }
-
+        cryptoService.eraseSharedSecret();
     }
 }
