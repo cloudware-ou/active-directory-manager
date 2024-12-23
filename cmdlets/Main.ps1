@@ -8,6 +8,7 @@ try {
 }
 
 $global:sharedSecret = $null
+$global:pssession = $null
 
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
@@ -65,7 +66,7 @@ function Decrypt{
 
         return [Text.Encoding]::UTF8.GetString($DecryptedData)
     } catch {
-        Write-Error "An error occured: $_"
+        Throw "An error occured: $_"
     }
 }
 
@@ -162,9 +163,6 @@ function Invoke-ADCommand {
     )
 
     try {
-        $securePassword = ConvertTo-SecureString $Env:ADPassword -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential ($Env:ADUsername, $securePassword)
-
         $scriptBlock = {
             param($cmd, $arguments)
             $result = ""
@@ -195,8 +193,9 @@ function Invoke-ADCommand {
         $result = ""
         $exitCode = 0
 
-        $job = Invoke-Command -ComputerName $Env:ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+        
         try {
+            $job = Invoke-Command -Session $global:pssession -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
             $job | Wait-Job -Timeout 30
             $invokeResult = Receive-Job -Job $job
             $result = $invokeResult[0]
@@ -206,10 +205,11 @@ function Invoke-ADCommand {
             if ($_.Exception.Message -like "*one or more jobs are blocked waiting for user interaction*") {
                 Stop-Job -Job $job
                 $result = "You forgot to supply some of the mandatory parameters."
-                $exitCode = 1
+                
             } else {
-                Write-Error "Error occured: $_"
+                $result = $_.Exception.Message
             }
+            $exitCode = 1
         }
 
         # Convert the result to a string representation
@@ -228,8 +228,7 @@ function Invoke-ADCommand {
 
         return @{Result = $resultString; ExitCode = $exitCode}
     } catch {
-        Write-Error "Failed to execute AD command: $_"
-        return $_.Exception.Message
+        Throw "Failed to execute AD command: $_"
     }
 }
 
@@ -240,7 +239,6 @@ function ExchangeKeys {
         [string]$Id
     )
     try {
-        
         $query = "SELECT alice_public_key FROM one_time_keys WHERE id = $Id;"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
@@ -282,7 +280,7 @@ function ExchangeKeys {
         $cmd.ExecuteNonQuery() | Out-Null
 
     } catch {
-        Write-Error "An error occurred: $_"
+        Throw "An error occurred: $_"
     }
 
 
@@ -321,6 +319,9 @@ $notificationHandler = {
 }
 
 try {
+
+    $global:pssession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath "privatekey" -ConnectingTimeout 5000 -ErrorAction Stop
+
     $conn = Get-PostgreSQLConnection
 
     Write-Host "Welcome! The script will proceed with listening to the database for new pending commands to execute"
@@ -340,5 +341,5 @@ try {
     }
 
 } catch {
-    Write-Error "An error occurred: $_"
+    throw "An error occurred: $_"
 }

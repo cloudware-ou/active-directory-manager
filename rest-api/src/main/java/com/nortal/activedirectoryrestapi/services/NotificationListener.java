@@ -54,8 +54,6 @@ public class NotificationListener {
                                 OneTimeKeys oneTimeKeys = oneTimeKeysService.getOneTimeKeys(id);
                                 getOneTimeKeysQueue(id).add(oneTimeKeys);
                         }
-
-
                     }
                 }
             } catch (SQLException e){
