@@ -3,7 +3,7 @@ package com.nortal.activedirectoryrestapi.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nortal.activedirectoryrestapi.Constants;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +24,7 @@ public class CommandWorker {
     private final ErrorHandler errorHandler;
     private final NotificationListener notificationListener;
 
+
     public Command waitForResult(Long id) throws InterruptedException {
         return notificationListener.getCompletedCommand(id);
     }
@@ -38,12 +39,8 @@ public class CommandWorker {
             }
     }
 
-    public ResponseEntity<String> submitJobMeta(String command, String validJson){
-        try {
-            HttpStatusCode httpStatusCode = HttpStatus.OK;
-            if (List.of(Constants.NEW_USER, Constants.NEW_GROUP).contains(command)){
-                httpStatusCode = HttpStatus.CREATED;
-            }
+    public ResponseEntity<String> submitJobMeta(String command, String validJson, HttpStatusCode httpStatusCode) {
+        try{
             return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, validJson).getResult());
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
@@ -53,13 +50,22 @@ public class CommandWorker {
     }
 
     public ResponseEntity<String> submitJob(String command, JsonNode payload){
-            return submitJobMeta(command, payload.toPrettyString());
+        return submitJob(command, payload, HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode){
+        try {
+            jsonHandler.secureJson(payload);
+            return submitJobMeta(command, payload.toPrettyString(), httpStatusCode);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){
         try {
             String json = jsonHandler.convertToJson(params);
-            return submitJobMeta(command, json);
+            return submitJobMeta(command, json, HttpStatus.OK);
         }catch (JsonProcessingException e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
