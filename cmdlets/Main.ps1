@@ -7,6 +7,7 @@ try {
     Throw "Failed to load assemblies: $_"
 }
 
+$global:sharedSecret = $null
 
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
@@ -23,6 +24,48 @@ function Get-PostgreSQLConnection {
         }
     } catch {
         Throw "Error connecting to PostgreSQL: $_"
+    }
+}
+
+function Decrypt{
+    param(
+        [Parameter(Mandatory)]
+        [string]$CiphertextBase64,
+        [Parameter(Mandatory)]
+        [string]$IVBase64
+    )
+
+    try{
+        $ciphertext = [Convert]::FromBase64String($CiphertextBase64)
+        $iv = [Convert]::FromBase64String($IVBase64)
+
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Key = $global:sharedSecret
+        $aes.IV = $iv
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+
+        $decryptor = $aes.CreateDecryptor()
+
+        # Decrypt the message
+        $memoryStream = New-Object System.IO.MemoryStream
+        $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($memoryStream, $decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
+        $cryptoStream.Write($ciphertext, 0, $ciphertext.Length)
+        $cryptoStream.Close()
+        $DecryptedData = $memoryStream.ToArray()
+        $memoryStream.Close()
+        
+        # Erase shared secret
+        for ($i = 0; $i -lt $global:sharedSecret.Length; $i++) {
+            $global:sharedSecret[$i] = Get-Random -Minimum 0 -Maximum 256
+        }
+        
+        # Set the variable to null
+        $global:sharedSecret = $null
+
+        return [Text.Encoding]::UTF8.GetString($DecryptedData)
+    } catch {
+        Write-Error "An error occured: $_"
     }
 }
 
@@ -80,10 +123,10 @@ function Update-CommandStatus {
     try {
         $query = "UPDATE commands SET command_status = @Status"
 
-        if ($Result -ne $null) {
+        if ($null -ne $Result) {
             $query += ", result = @Result"
         }
-        if ($ExitCode -ne $null) {
+        if ($null -ne $ExitCode) {
             $query += ", exit_code = @ExitCode"
         }
 
@@ -93,10 +136,10 @@ function Update-CommandStatus {
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Status", $Status))) | Out-Null
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@CommandId", $CommandId))) | Out-Null
 
-        if ($Result -ne $null) {
+        if ($null -ne $Result) {
             $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Result", $Result))) | Out-Null
         }
-        if ($ExitCode -ne $null) {
+        if ($null -ne $ExitCode) {
             $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@ExitCode", $ExitCode))) | Out-Null
         }
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@TimeStamp", (Get-Date)))) | Out-Null
@@ -144,7 +187,8 @@ function Invoke-ADCommand {
 
         foreach ($passwordArg in ('AccountPassword', 'NewPassword', 'OldPassword')){
             if ($Arguments.ContainsKey($passwordArg)) {
-                $Arguments[$passwordArg] = ConvertTo-SecureString $Arguments[$passwordArg] -AsPlainText -Force
+                $enc = $Arguments[$passwordArg]
+                $Arguments[$passwordArg] = ConvertTo-SecureString (Decrypt -CiphertextBase64 $enc["ciphertext"] -IVBase64 $enc["iv"]) -AsPlainText -Force
             }
         }
 
@@ -153,7 +197,7 @@ function Invoke-ADCommand {
 
         $job = Invoke-Command -ComputerName $Env:ADServer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
         try {
-            $job | Wait-Job
+            $job | Wait-Job -Timeout 30
             $invokeResult = Receive-Job -Job $job
             $result = $invokeResult[0]
             $exitCode = $invokeResult[1]
@@ -163,6 +207,8 @@ function Invoke-ADCommand {
                 Stop-Job -Job $job
                 $result = "You forgot to supply some of the mandatory parameters."
                 $exitCode = 1
+            } else {
+                Write-Error "Error occured: $_"
             }
         }
 
@@ -187,7 +233,7 @@ function Invoke-ADCommand {
     }
 }
 
-function Get-Key {
+function ExchangeKeys {
     param (
         [Parameter(Mandatory)]
         [Npgsql.NpgsqlConnection]$Connection,
@@ -201,10 +247,10 @@ function Get-Key {
         $reader = $cmd.ExecuteReader()
 
         $reader.Read()
-        $der = [Convert]::FromBase64String($reader["alice_public_key"])
+        $alicePublicKeyDer = [Convert]::FromBase64String($reader["alice_public_key"])
         $reader.Close()
 
-        $asnReader = [System.Formats.Asn1.AsnReader]::new($der, [System.Formats.Asn1.AsnEncodingRules]::DER)
+        $asnReader = [System.Formats.Asn1.AsnReader]::new($alicePublicKeyDer, [System.Formats.Asn1.AsnEncodingRules]::DER)
         $outerSequence = $asnReader.ReadSequence()
         $outerSequence.ReadSequence()
         $unusedBits = 0
@@ -214,13 +260,19 @@ function Get-Key {
         $bobPrivateKey = $bobKeyPair.PrivateKey
         $bobPublicKey = $bobKeyPair.PublicKey
 
-        $sharedSecret = [Sodium.ScalarMult]::Mult($bobPrivateKey, $alicePublicKey)
+        $global:sharedSecret = [Sodium.ScalarMult]::Mult($bobPrivateKey, $alicePublicKey)
 
-        # Convert the shared secret to Base64 for display or further use
-        $sharedSecretBase64 = [Convert]::ToBase64String($sharedSecret)
-        Write-Host "Shared Secret (Base64): $sharedSecretBase64"
+        $asnWriter = [System.Formats.Asn1.AsnWriter]::new([System.Formats.Asn1.AsnEncodingRules]::DER)
+        $asnWriter.PushSequence()
+        $asnWriter.PushSequence()
+        $asnWriter.WriteObjectIdentifier("1.3.101.110")  # OID for Curve25519
+        $asnWriter.PopSequence()
+        $asnWriter.WriteBitString($bobPublicKey)
+        $asnWriter.PopSequence()
 
-        $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKey)
+        $bobPublicKeyDer = $asnWriter.Encode()
+
+        $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKeyDer)
 
         $query += "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
         $cmd = $Connection.CreateCommand()
@@ -244,8 +296,7 @@ $notificationHandler = {
     $conn = Get-PostgreSQLConnection
 
     if ($channel -eq 'one_time_keys_alice'){
-        Get-Key -Connection $conn -Id $id
-
+        ExchangeKeys -Connection $conn -Id $id
     } elseif ($channel -eq 'new_commands') {
         $commands = Get-PendingCommands -Connection $conn -Id $id
 
@@ -263,6 +314,7 @@ $notificationHandler = {
                 Write-Host "Command ID $($cmd.Id) executed and updated with result."
             }
         }
+
     }
 
 
