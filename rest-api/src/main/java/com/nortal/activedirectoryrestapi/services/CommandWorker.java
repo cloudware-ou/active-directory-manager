@@ -39,12 +39,13 @@ public class CommandWorker {
             }
     }
 
-    public ResponseEntity<String> submitJobMeta(String command, String validJson, HttpStatusCode httpStatusCode) {
+    public ResponseEntity<String> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode) {
         try{
-            return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, validJson).getResult());
+            jsonHandler.secureJson(payload);
+            return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, payload.toPrettyString()).getResult());
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -53,19 +54,10 @@ public class CommandWorker {
         return submitJob(command, payload, HttpStatus.OK);
     }
 
-    public ResponseEntity<String> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode){
-        try {
-            jsonHandler.secureJson(payload);
-            return submitJobMeta(command, payload.toPrettyString(), httpStatusCode);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
-
     public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){
         try {
-            String json = jsonHandler.convertToJson(params);
-            return submitJobMeta(command, json, HttpStatus.OK);
+            JsonNode json = jsonHandler.convertToJson(params);
+            return submitJob(command, json, HttpStatus.OK);
         }catch (JsonProcessingException e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
