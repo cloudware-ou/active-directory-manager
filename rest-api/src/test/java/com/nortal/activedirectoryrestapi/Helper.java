@@ -1,7 +1,5 @@
 package com.nortal.activedirectoryrestapi;
 
-import com.nortal.activedirectoryrestapi.entities.Command;
-import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
@@ -10,7 +8,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
 @Component
 public class Helper {
@@ -33,7 +30,7 @@ public class Helper {
         );
     }
 
-    public void createTestUser(String baseUrl, CommandWorker commandWorker) throws Exception {
+    public void createTestUser(String baseUrl) {
         String payload = "{"
                 + "\"Name\": \"Test User\","
                 + "\"GivenName\": \"Test\","
@@ -46,14 +43,6 @@ public class Helper {
                 + "}";
 
 
-        Command mockCreateCommand = new Command();
-        mockCreateCommand.setCommand("New-ADUser");
-        mockCreateCommand.setArguments(payload);
-        mockCreateCommand.setExitCode(0);
-        mockCreateCommand.setId(2L);
-
-        //when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(payload, headers);
@@ -63,20 +52,12 @@ public class Helper {
 
     }
 
-    public void createGroup(String baseUrl, CommandWorker commandWorker) throws Exception {
+    public void createGroup(String baseUrl) {
         String payload = "{" +
                 "\"Name\": \"TestGroup2\"," +
                 "\"GroupScope\": \"Global\"," +
                 "\"GroupCategory\": \"Security\"" +
                 "}";
-
-        Command mockCommand = new Command();
-        mockCommand.setCommand("New-ADGroup");
-        mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(4L);
-
-        //when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -88,19 +69,11 @@ public class Helper {
     }
 
 
-    public void addMemberToGroup(String groupName, String memberSamAccountName, CommandWorker commandWorker, String baseUrl) throws Exception {
+    public void addMemberToGroup(String groupName, String memberSamAccountName, String baseUrl) {
         String payload = "{"
                 + "\"Identity\": \"" + groupName + "\","
                 + "\"Members\": \"" + memberSamAccountName + "\""
                 + "}";
-
-        Command mockCommand = new Command();
-        mockCommand.setCommand("Add-ADGroupMember");
-        mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(12L);
-
-        //when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
 
         String url = baseUrl + "/groups/members";
         HttpHeaders headers = new HttpHeaders();

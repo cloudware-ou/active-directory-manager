@@ -1,15 +1,8 @@
 package com.nortal.activedirectoryrestapi;
 
-import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Command;
-import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
-import com.nortal.activedirectoryrestapi.services.CommandService;
-import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -20,22 +13,12 @@ import org.springframework.util.MultiValueMap;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class GroupMemberTests {
 
     @LocalServerPort
     private int port;
-
-    @InjectMocks
-    private RESTApiController restApiController;
-
-    @Mock
-    private CommandWorker commandWorker;
-
-    @Mock
-    private CommandService commandService;
 
     private TestRestTemplate restTemplate;
 
@@ -54,9 +37,9 @@ public class GroupMemberTests {
     @BeforeEach
     public void setUp() throws Exception {
         restTemplate = new TestRestTemplate();
-        helper.createTestUser(getBaseUrl()+"/users", commandWorker);
-        helper.createGroup(getBaseUrl()+"/groups", commandWorker);
-        helper.addMemberToGroup(groupName, memberSamAccountName, commandWorker, getBaseUrl());
+        helper.createTestUser(getBaseUrl()+"/users");
+        helper.createGroup(getBaseUrl()+"/groups");
+        helper.addMemberToGroup(groupName, memberSamAccountName, getBaseUrl());
 
     }
 
@@ -71,19 +54,7 @@ public class GroupMemberTests {
 
 
     @Test
-    public void testGetGroupMembers() throws Exception {
-
-        MultiValueMap<String, Object> queryParams = new LinkedMultiValueMap<>();
-        queryParams.add("Identity", "CN=gruppp,CN=Users,DC=Domain,DC=ee");
-
-        String mockCommand = "Get-ADGroupMember";
-        Command command = new Command();
-        command.setCommand(mockCommand);
-        command.setArguments(queryParams.toString());
-        command.setExitCode(0);
-
-        String mockJson = "{\"Identity\":\"CN=gruppp,CN=Users,DC=Domain,DC=ee\"}";
-        //when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);
+    public void testGetGroupMembers() {
 
         String url = getBaseUrl() + "/groups/members?Identity=CN=gruppp,CN=Users,DC=Domain,DC=ee";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
@@ -97,20 +68,12 @@ public class GroupMemberTests {
 
 
     @Test
-    public void testAddMemberToGroup() throws Exception {
+    public void testAddMemberToGroup() {
         String payload = "{"
                 + "\"Identity\": \"" + groupName + "\","
                 + "\"Members\": \"" + memberSamAccountName + "\""
                 + "}";
 
-        Command mockCommand = new Command();
-        mockCommand.setCommand("Add-ADGroupMember");
-        mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(12L);
-
-        //when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
-        //when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
 
         String url = getBaseUrl() + "/groups/members";
         HttpHeaders headers = new HttpHeaders();
@@ -121,11 +84,6 @@ public class GroupMemberTests {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        // Command savedCommand = commandService.getCommand(mockCommand.getId());
-        //assertNotNull(savedCommand);
-        //assertEquals("Add-ADGroupMember", savedCommand.getCommand());
-        //assertEquals(payload, savedCommand.getArguments());
-        //assertEquals(0, savedCommand.getExitCode());
 
         groupName = "TestGroup2";
         memberSamAccountName = "testuser";
@@ -133,7 +91,7 @@ public class GroupMemberTests {
     }
 
     @Test
-    public void testRemoveMemberFromGroup() throws Exception {
+    public void testRemoveMemberFromGroup() {
 
         String deleteUrl = getBaseUrl() + "/groups/members";
         MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();

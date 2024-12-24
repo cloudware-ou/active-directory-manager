@@ -1,25 +1,16 @@
 package com.nortal.activedirectoryrestapi;
 
-import com.nortal.activedirectoryrestapi.controllers.RESTApiController;
-import com.nortal.activedirectoryrestapi.entities.Command;
-import com.nortal.activedirectoryrestapi.services.CommandService;
-import com.nortal.activedirectoryrestapi.services.CommandWorker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class UserTests {
@@ -31,18 +22,11 @@ public class UserTests {
         return "http://localhost:" + port;
     }
 
-
-    @Mock
-    private CommandWorker commandWorker;
-
-    @Mock
-    private CommandService commandService;
-
     private TestRestTemplate restTemplate;
 
     private String createdUserSamAccountName;
 
-    private Helper helper = new Helper();
+    private final Helper helper = new Helper();
 
 
     @BeforeEach
@@ -73,15 +57,6 @@ public class UserTests {
 
         createdUserSamAccountName = "testuser";
 
-        Command mockCommand = new Command();
-        mockCommand.setCommand("New-ADUser");
-        mockCommand.setArguments(payload);
-        mockCommand.setExitCode(0);
-        mockCommand.setId(1L);
-
-        //when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCommand);
-        //when(commandService.getCommand(mockCommand.getId())).thenReturn(mockCommand);
-
         String url = getBaseUrl() + "/users";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -89,18 +64,12 @@ public class UserTests {
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
-
-        //Command savedCommand = commandService.getCommand(mockCommand.getId());
-        //assertNotNull(savedCommand);
-        //assertEquals("New-ADUser", savedCommand.getCommand());
-        //assertEquals(payload, savedCommand.getArguments());
-        //assertEquals(0, savedCommand.getExitCode());
     }
 
     @Test
     public void testUpdateUser() throws Exception {
 
-        helper.createTestUser(getBaseUrl()+"/users", commandWorker);
+        helper.createTestUser(getBaseUrl()+"/users");
 
         String updatePayload = "{"
                 + "\"Identity\": \"testuser\","
@@ -110,15 +79,6 @@ public class UserTests {
                 + "\"UserPrincipalName\": \"testuser@domain.com\","
                 + "\"Enabled\": true"
                 + "}";
-
-        Command mockUpdateCommand = new Command();
-        mockUpdateCommand.setCommand("Set-ADUser");
-        mockUpdateCommand.setArguments(updatePayload);
-        mockUpdateCommand.setExitCode(0);
-        mockUpdateCommand.setId(3L);
-
-        //when(commandWorker.executeCommand("Set-ADUser", updatePayload)).thenReturn(mockUpdateCommand);
-        //when(commandService.getCommand(mockUpdateCommand.getId())).thenReturn(mockUpdateCommand);
 
         String updateUrl = getBaseUrl() + "/users";
         HttpHeaders headers = new HttpHeaders();
@@ -132,19 +92,7 @@ public class UserTests {
     }
 
     @Test
-    public void testGetUsers() throws Exception {
-        MultiValueMap<String, Object> queryParams = new LinkedMultiValueMap<>();
-        queryParams.add("Filter", "*");
-        queryParams.add("SearchBase", "DC=Domain,DC=ee");
-
-        String mockCommand = "Get-ADUser";
-        Command command = new Command();
-        command.setCommand(mockCommand);
-        command.setArguments(queryParams.toString());
-        command.setExitCode(0);
-
-        String mockJson = "{\"Filter\":\"*\",\"SearchBase\":\"DC=Domain,DC=ee\"}";
-        //when(commandWorker.executeCommand(mockCommand, mockJson)).thenReturn(command);
+    public void testGetUsers() {
 
         String url = getBaseUrl() + "/users?Filter=*&SearchBase=DC=Domain,DC=ee";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
