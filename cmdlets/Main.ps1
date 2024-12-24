@@ -96,11 +96,9 @@ function Get-PendingCommand {
     $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
 
     try {
-        Write-Host "Get-PendingCommand 1"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $reader = $cmd.ExecuteReader()
-        Write-Host "Get-PendingCommand 2"
         $data = @()
         while ($reader.Read()) {
             $data += [PSCustomObject]@{
@@ -110,7 +108,6 @@ function Get-PendingCommand {
             }
         }
         $reader.Close()
-        Write-Host "Get-PendingCommand 3"
         Write-Verbose "$($data.Count) pending command(s) retrieved."
         return $data
     } catch {
@@ -168,9 +165,13 @@ function Update-CommandStatus {
 }
 
 function Start-PSSession {
-    Write-Host "Starting a new PSSession..." -ForegroundColor Green
-    $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
-    Write-Host "PSSession started successfully." -ForegroundColor Green
+    try {
+        Write-Host "Starting a new PSSession..." -ForegroundColor Green
+        $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
+        Write-Host "PSSession started successfully." -ForegroundColor Green
+    } catch {
+        throw "Error starting PSSession $_"
+    }
 }
 
 # Function to execute an AD command on a remote server
