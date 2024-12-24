@@ -68,7 +68,7 @@ You can access the Swagger UI at:
 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ### 7. Make a HTTP request
-The payload (or query parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Switch parameters should have a 'true' value. Refer to [Active Directory Module documentation] (https://learn.microsoft.com/en-us/powershell/module/activedirectory/) for the reference. The only known exceptions to the documentation are passwords (AccountPassword, OldPassword, NewPassword), which have to be specified as plaintext (as shown here).
+The payload (or query parameters in case of GET/DELETE requests) should contain arguments that you want to pass to a relevant AD command. Switch parameters should have a 'true' value. Refer to [Active Directory Module documentation](https://learn.microsoft.com/en-us/powershell/module/activedirectory/) for the reference. The only known exceptions to the documentation are passwords (AccountPassword, OldPassword, NewPassword), which have to be specified as plaintext (as shown here).
 
 ## Example payloads
 
