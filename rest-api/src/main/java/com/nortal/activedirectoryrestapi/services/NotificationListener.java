@@ -6,6 +6,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -18,7 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Service
 @RequiredArgsConstructor
 public class NotificationListener {
-
+    private final Logger logger = LoggerFactory.getLogger(NotificationListener.class);
     private final DataSource dataSource;
     private final CommandService commandService;
     private final OneTimeKeysService oneTimeKeysService;
@@ -44,6 +46,7 @@ public class NotificationListener {
                         continue;
                     }
                     for (PGNotification nt : nts) {
+                        logger.info("Received notification: {}: {}", nt.getName(), nt.getParameter());
                         Long id = Long.valueOf(nt.getParameter());
                         switch (nt.getName()){
                             case "completed_commands":

@@ -9,6 +9,15 @@ try {
 
 $global:sharedSecret = $null
 $global:privatekeyfile = "privatekey"
+$Global:MySession = $null
+$Global:mutex = New-Object System.Threading.Mutex $false, "NotificationHandlerMutex"
+
+# Define the SSH options in a hashtable
+$Global:sshOptions = @{
+    ServerAliveInterval = 30  # Send a keepalive message every 30 seconds
+    ServerAliveCountMax = 2   # Terminate the connection if no response after 2 keepalive messages
+    TCPKeepAlive = "yes"      # Enable TCP keepalive messages
+}
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
     try {
@@ -76,17 +85,15 @@ function EraseSharedSecret {
 }
 
 # Function to retrieve pending commands from the database
-function Get-PendingCommands {
+function Get-PendingCommand {
     param (
         [Parameter(Mandatory)]
         [Npgsql.NpgsqlConnection]$Connection,
+        [Parameter(Mandatory)]
         [string]$Id
     )
 
-    $query = "SELECT id, command, arguments FROM commands WHERE command_status = 'PENDING';"
-    if ($null -ne $Id){
-        $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
-    }
+    $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
 
     try {
         $cmd = $Connection.CreateCommand()
@@ -102,7 +109,7 @@ function Get-PendingCommands {
         }
         $reader.Close()
 
-        Write-Verbose "$($data.Count) pending command(s) retrieved."
+        Write-Host "$($data.Count) pending command(s) retrieved."
         return $data
     } catch {
         Throw "Error retrieving commands: $_"
@@ -152,12 +159,17 @@ function Update-CommandStatus {
 
 
         $cmd.ExecuteNonQuery() | Out-Null
-        Write-Verbose "Command ID $CommandId updated to status '$Status'."
+        Write-Host "Command ID $CommandId updated to status '$Status'."
     } catch {
         Throw "Error updating command status: $_"
     }
 }
 
+function Start-PSSession {
+    Write-Host "Starting a new PSSession..." -ForegroundColor Green
+    $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
+    Write-Host "PSSession started successfully." -ForegroundColor Green
+}
 
 # Function to execute an AD command on a remote server
 function Invoke-ADCommand {
@@ -197,11 +209,20 @@ function Invoke-ADCommand {
 
         EraseSharedSecret
 
+        if ($null -eq $Global:MySession -or $Global:MySession.State -ne "Opened") {
+            Write-Host "PSsession state: $($Global:MySession.State), $Global:MySession"
+            Write-Host "PSSession is not active. Attempting to restart..." -ForegroundColor Yellow
+            if ($null -ne $Global:MySession) {
+                Remove-PSSession -Session $Global:MySession -ErrorAction SilentlyContinue
+            }
+            Start-PSSession
+        }
+
         $result = ""
         $exitCode = 0
         
         try {
-            $job = Invoke-Command -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+            $job = Invoke-Command -Session $Global:MySession -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
             $job | Wait-Job -Timeout 30
             $invokeResult = Receive-Job -Job $job
             $result = $invokeResult[0]
@@ -216,6 +237,10 @@ function Invoke-ADCommand {
                 $result = $_.Exception.Message
             }
             $exitCode = 1
+        }
+
+        if ($exitCode -eq 1){
+            Write-Host "Command completed with error"
         }
 
         # Convert the result to a string representation
@@ -278,7 +303,7 @@ function ExchangeKeys {
 
         $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKeyDer)
 
-        $query += "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
+        $query = "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@BobPublicKey", $bobPublicKeyBase64))) | Out-Null
@@ -292,46 +317,62 @@ function ExchangeKeys {
 
 }
 
-$notificationHandler = {
-    param($origin, $payload)
-    $id = $($payload.Payload)
-    $channel = $($payload.Channel)
+function HandleCommand{
+    param(
+        [Parameter(Mandatory)]
+        [Npgsql.NpgsqlConnection]$conn,
+        [string]$id
+    )
+
+    $commands = Get-PendingCommand -Connection $conn -Id $id
+
+    if ($commands.Count -gt 0) {
+        foreach ($cmd in $commands) {
+            # Update status to PROCESSING
+            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
+
+            Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
+            $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
+
+            # Update status to DONE with result
+            Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
+
+            Write-Host "Command ID $($cmd.Id) executed and updated with result."
+        }
+    } else {
+        Write-Error "No command with ID $id, shouldn't happen."
+    }
+}
+
+function HandleNotification{
+    param (
+        [string]$id,
+        [string]$channel
+    )
+
     Write-Host "Received notification from channel $channel with payload $id"
     $conn = Get-PostgreSQLConnection
 
     if ($channel -eq 'one_time_keys_alice'){
         ExchangeKeys -Connection $conn -Id $id
     } elseif ($channel -eq 'new_commands') {
-        $commands = Get-PendingCommands -Connection $conn -Id $id
-
-        if ($commands.Count -gt 0) {
-            foreach ($cmd in $commands) {
-                # Update status to PROCESSING
-                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'PROCESSING'
-    
-                Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
-                $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
-    
-                # Update status to DONE with result
-                Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
-    
-                Write-Host "Command ID $($cmd.Id) executed and updated with result."
-            }
-        }
-
+        HandleCommand -conn $conn -id $id
+    } else {
+        Write-Error "Wrong channel, shouldn't happen."
     }
-
 
 }
 
+$notificationHandler = {
+    param($origin, $payload)
+
+    $Global:mutex.WaitOne()
+    HandleNotification -id $($payload.Payload) -channel $($payload.Channel)
+    $Global:mutex.ReleaseMutex()
+}
+
 try {
-
-    Write-Host "Attempting to connect to Active Directory..."
-    Invoke-Command -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -ConnectingTimeout 10000 -ErrorAction Stop -ScriptBlock {
-        Get-ADComputer -Filter *
-        Write-Host "Successfully connected to Active Directory!"
-    }
-
+    Start-PSSession
     $conn = Get-PostgreSQLConnection
 
     Write-Host "Welcome! The script will proceed with listening to the database for new pending commands to execute"
@@ -341,13 +382,13 @@ try {
 
     $listenCommand = $conn.CreateCommand()
     $listenCommand.CommandText = "LISTEN new_commands; LISTEN one_time_keys_alice;"
-    $listenCommand.ExecuteNonQuery() >> $null
+    $listenCommand.ExecuteNonQuery() | Out-Null
 
     $conn.add_Notification($notificationHandler)
 
     while ($true) {
         # Wait for a notification
-        $conn.Wait(1000) >> $null
+        $conn.Wait(1000) | Out-Null
     }
 
 } catch {
