@@ -18,9 +18,9 @@ public class JSONHandler {
 
     private final CryptoService cryptoService;
 
-    public String convertToJson(MultiValueMap<String, Object> multiValueMap) throws JsonProcessingException {
+    public JsonNode convertToJson(MultiValueMap<String, Object> multiValueMap) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(
+        return objectMapper.valueToTree(
                 multiValueMap.entrySet().stream()
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey,
