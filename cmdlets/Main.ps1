@@ -96,9 +96,11 @@ function Get-PendingCommand {
     $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
 
     try {
+        Write-Host "Get-PendingCommand 1"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
         $reader = $cmd.ExecuteReader()
+        Write-Host "Get-PendingCommand 2"
         $data = @()
         while ($reader.Read()) {
             $data += [PSCustomObject]@{
@@ -108,8 +110,8 @@ function Get-PendingCommand {
             }
         }
         $reader.Close()
-
-        Write-Host "$($data.Count) pending command(s) retrieved."
+        Write-Host "Get-PendingCommand 3"
+        Write-Verbose "$($data.Count) pending command(s) retrieved."
         return $data
     } catch {
         Throw "Error retrieving commands: $_"
@@ -159,7 +161,7 @@ function Update-CommandStatus {
 
 
         $cmd.ExecuteNonQuery() | Out-Null
-        Write-Host "Command ID $CommandId updated to status '$Status'."
+        Write-Verbose "Command ID $CommandId updated to status '$Status'."
     } catch {
         Throw "Error updating command status: $_"
     }
@@ -360,6 +362,7 @@ function HandleNotification{
     } else {
         Write-Error "Wrong channel, shouldn't happen."
     }
+    $conn.Close()
 
 }
 
@@ -393,4 +396,6 @@ try {
 
 } catch {
     throw "An error occurred: $_"
+} finally {
+    $conn.Close()
 }

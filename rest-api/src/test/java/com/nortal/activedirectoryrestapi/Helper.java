@@ -52,7 +52,7 @@ public class Helper {
         mockCreateCommand.setExitCode(0);
         mockCreateCommand.setId(2L);
 
-        when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
+        //when(commandWorker.executeCommand("New-ADUser", payload)).thenReturn(mockCreateCommand);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -76,7 +76,7 @@ public class Helper {
         mockCommand.setExitCode(0);
         mockCommand.setId(4L);
 
-        when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
+        //when(commandWorker.executeCommand("New-ADGroup", payload)).thenReturn(mockCommand);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -100,7 +100,7 @@ public class Helper {
         mockCommand.setExitCode(0);
         mockCommand.setId(12L);
 
-        when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
+        //when(commandWorker.executeCommand("Add-ADGroupMember", payload)).thenReturn(mockCommand);
 
         String url = baseUrl + "/groups/members";
         HttpHeaders headers = new HttpHeaders();
