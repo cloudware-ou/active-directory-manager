@@ -45,14 +45,15 @@ function Get-PendingCommand {
         [Parameter(Mandatory)]
         [Npgsql.NpgsqlConnection]$Connection,
         [Parameter(Mandatory)]
-        [string]$Id
+        [long]$Id
     )
 
-    $query = "SELECT id, command, arguments FROM commands WHERE id = $Id;"
+    $query = "SELECT id, command, arguments FROM commands WHERE id = @Id;"
 
     try {
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
+        $cmd.Parameters.AddWithValue("@Id", $Id) | Out-Null
         $reader = $cmd.ExecuteReader()
         $data = @()
         while ($reader.Read()) {
@@ -77,7 +78,7 @@ function Update-CommandStatus {
         [Npgsql.NpgsqlConnection]$Connection,
 
         [Parameter(Mandatory)]
-        [int]$CommandId,
+        [long]$CommandId,
 
         [Parameter(Mandatory)]
         [ValidateSet("PENDING", "PROCESSING", "COMPLETED")]
@@ -100,17 +101,16 @@ function Update-CommandStatus {
         $query += ", timestamp = @TimeStamp WHERE id = @CommandId;"
         $cmd = $Connection.CreateCommand()
         $cmd.CommandText = $query
-        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Status", $Status))) | Out-Null
-        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@CommandId", $CommandId))) | Out-Null
+        $cmd.Parameters.AddWithValue("@Status", $Status) | Out-Null
+        $cmd.Parameters.AddWithValue("@CommandId", $CommandId) | Out-Null
 
         if ($null -ne $Result) {
-            $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Result", $Result))) | Out-Null
+            $cmd.Parameters.AddWithValue("@Result", $Result) | Out-Null
         }
         if ($null -ne $ExitCode) {
-            $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@ExitCode", $ExitCode))) | Out-Null
+            $cmd.Parameters.AddWithValue("@ExitCode", $ExitCode) | Out-Null
         }
-        $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@TimeStamp", (Get-Date)))) | Out-Null
-
+        $cmd.Parameters.AddWithValue("@TimeStamp", (Get-Date)) | Out-Null
 
         $cmd.ExecuteNonQuery() | Out-Null
         Write-Verbose "Command ID $CommandId updated to status '$Status'."
@@ -226,12 +226,13 @@ function Invoke-ADCommand {
 function HandleKeys{
     param(
         [Npgsql.NpgsqlConnection]$Connection,
-        [string]$Id
+        [long]$Id
     )
 
-    $query = "SELECT alice_public_key FROM one_time_keys WHERE id = $Id;"
+    $query = "SELECT alice_public_key FROM one_time_keys WHERE id = @Id;"
     $cmd = $Connection.CreateCommand()
     $cmd.CommandText = $query
+    $cmd.Parameters.AddWithValue("@Id", $Id) | Out-Null
     $reader = $cmd.ExecuteReader()
 
     $reader.Read()
@@ -241,11 +242,11 @@ function HandleKeys{
     $bobPublicKeyDer = $global:cryptoService.ExchangeKeys($alicePublicKeyDer)
     $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKeyDer)
 
-    $query = "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = $Id;"
+    $query = "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = @Id;"
     $cmd = $Connection.CreateCommand()
     $cmd.CommandText = $query
-    $cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@BobPublicKey", $bobPublicKeyBase64))) | Out-Null
-    #$cmd.Parameters.Add((New-Object Npgsql.NpgsqlParameter("@Id", $Id))) | Out-Null
+    $cmd.Parameters.AddWithValue("@BobPublicKey", $bobPublicKeyBase64) | Out-Null
+    $cmd.Parameters.AddWithValue("@Id", $Id) | Out-Null
     $cmd.ExecuteNonQuery() | Out-Null
 }
 
@@ -253,7 +254,7 @@ function HandleCommand{
     param(
         [Parameter(Mandatory)]
         [Npgsql.NpgsqlConnection]$conn,
-        [string]$id
+        [long]$id
     )
 
     $commands = Get-PendingCommand -Connection $conn -Id $id
@@ -278,7 +279,7 @@ function HandleCommand{
 
 function HandleNotification{
     param (
-        [string]$id,
+        [long]$id,
         [string]$channel
     )
 
@@ -298,10 +299,14 @@ function HandleNotification{
 
 $notificationHandler = {
     param($origin, $payload)
-
-    $Global:mutex.WaitOne()
-    HandleNotification -id $($payload.Payload) -channel $($payload.Channel)
-    $Global:mutex.ReleaseMutex()
+    try{
+        $Global:mutex.WaitOne()
+        HandleNotification -id $($payload.Payload) -channel $($payload.Channel)
+    } catch {
+        Write-Error $_
+    } finally {
+        $Global:mutex.ReleaseMutex()
+    }
 }
 
 
