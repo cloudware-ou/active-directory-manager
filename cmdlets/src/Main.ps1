@@ -1,7 +1,7 @@
 try {
-    Add-Type -Path "../npgsql/lib/net8.0/Npgsql.dll"
-    Add-Type -Path "../microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
-    Add-Type -Path "../sodium.core/lib/netstandard2.1/Sodium.Core.dll"
+    Import-Module ../npgsql/lib/net8.0/Npgsql.dll
+    Import-Module ../microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+    Import-Module ../sodium.core/lib/netstandard2.1/Sodium.Core.dll
     Import-Module ./CryptoService.ps1
     Write-Verbose "Assemblies loaded successfully."
 } catch {
@@ -166,7 +166,9 @@ function Invoke-ADCommand {
             }
         }
 
-        $global:cryptoService.EraseSharedSecret()
+        if ($global:cryptoService.HasValidSharedSecret) {
+            $global:cryptoService.EraseSharedSecret()
+        }
 
         if ($null -eq $Global:MySession -or $Global:MySession.State -ne "Opened") {
             Write-Host "PSsession state: $($Global:MySession.State), $Global:MySession"
@@ -189,7 +191,6 @@ function Invoke-ADCommand {
         }
         catch {
             if ($_.Exception.Message -like "*one or more jobs are blocked waiting for user interaction*") {
-                Stop-Job -Job $job
                 $result = "You forgot to supply some of the mandatory parameters."
             } elseif ($null -eq $invokeResult) {
                 $result = "A network error occured."
@@ -197,6 +198,9 @@ function Invoke-ADCommand {
                 $result = $_.Exception.Message
             }
             $exitCode = 1
+            Stop-Job -Job $job
+        } finally {
+            Remove-Job -Job $job
         }
 
         if ($exitCode -eq 1){
@@ -267,7 +271,7 @@ function HandleCommand{
             Write-Host "Executing command ID $($cmd.Id): $($cmd.Command)"
             $executionResult = Invoke-ADCommand -ADCommand $cmd.Command -Arguments $($cmd.Arguments)
 
-            # Update status to DONE with result
+            # Update status to COMPLETED with result
             Update-CommandStatus -Connection $conn -CommandId $cmd.Id -Status 'COMPLETED' -Result $executionResult.Result -ExitCode $executionResult.ExitCode
 
             Write-Host "Command ID $($cmd.Id) executed and updated with result."
@@ -283,7 +287,7 @@ function HandleNotification{
         [string]$channel
     )
 
-    Write-Host "Received notification from channel $channel with payload $id"
+    Write-Host "Received notification from channel $channel with payload $id" -ForegroundColor Cyan
     $conn = Get-PostgreSQLConnection
 
     if ($channel -eq 'one_time_keys_alice'){

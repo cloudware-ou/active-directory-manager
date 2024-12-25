@@ -8,8 +8,6 @@ class CryptoService {
 
     [byte[]]ExchangeKeys ([byte[]] $alicePublicKeyDer){
         try {
-
-    
             $asnReader = [System.Formats.Asn1.AsnReader]::new($alicePublicKeyDer, [System.Formats.Asn1.AsnEncodingRules]::DER)
             $outerSequence = $asnReader.ReadSequence()
             $outerSequence.ReadSequence()
@@ -70,14 +68,16 @@ class CryptoService {
     }
 
     [void] EraseSharedSecret() {
-        if ($null -ne $this.sharedSecret){
-            # Erase shared secret
-            for ($i = 0; $i -lt $this.sharedSecret.Length; $i++) {
-                $this.sharedSecret[$i] = Get-Random -Minimum 0 -Maximum 256
-            }
-            
-            # Set the variable to null
-            $this.sharedSecret = $null
+        # Erase shared secret
+        for ($i = 0; $i -lt $this.sharedSecret.Length; $i++) {
+            $this.sharedSecret[$i] = Get-Random -Minimum 0 -Maximum 256
         }
+        
+        # Set the variable to null
+        $this.sharedSecret = $null
+    }
+
+    [bool] HasValidSharedSecret(){
+        return $null -ne $this.sharedSecret
     }
 }

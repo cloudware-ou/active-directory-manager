@@ -19,10 +19,11 @@ public class CryptoService {
     private final OneTimeKeysService oneTimeKeysService;
     private byte[] sharedSecret;
 
+    /**
+     * Performs Diffie-Hellman key exchange
+     * @throws Exception various encrypt
+     */
     public void exchangeKeys() throws Exception {
-        if (sharedSecret != null) {
-            return;
-        }
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
         KeyPair aliceKeyPair = kpg.generateKeyPair();
         String alicePublicKeyBase64 = Base64.getEncoder().encodeToString(aliceKeyPair.getPublic().getEncoded());
@@ -57,11 +58,12 @@ public class CryptoService {
     }
 
     public void eraseSharedSecret(){
-        if (sharedSecret == null) {
-            return;
-        }
         SecureRandom random = new SecureRandom();
         random.nextBytes(sharedSecret);
         sharedSecret = null;
+    }
+
+    public boolean hasValidSharedSecret() {
+        return sharedSecret != null;
     }
 }

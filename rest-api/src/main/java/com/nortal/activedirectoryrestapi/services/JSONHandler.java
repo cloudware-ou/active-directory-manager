@@ -33,7 +33,7 @@ public class JSONHandler {
         List<String> fieldsToEncrypt = List.of("AccountPassword", "NewPassword", "OldPassword");
         for (String field : fieldsToEncrypt) {
             if (payload.has(field)) {
-                cryptoService.exchangeKeys();
+                if (!cryptoService.hasValidSharedSecret()) cryptoService.exchangeKeys();
                 String[] cipher = cryptoService.encrypt(payload.path(field).asText());
                 if (payload.isObject()) {
                     ObjectMapper mapper = new ObjectMapper();
@@ -45,6 +45,6 @@ public class JSONHandler {
                 }
             }
         }
-        cryptoService.eraseSharedSecret();
+        if (cryptoService.hasValidSharedSecret()) cryptoService.eraseSharedSecret();
     }
 }

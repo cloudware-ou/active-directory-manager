@@ -1,12 +1,8 @@
 package com.nortal.activedirectoryrestapi.misc;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
 @RequiredArgsConstructor
-@Getter
-@Setter
 public class ErrorObject {
     private final String command;
     private final String errorMessage;

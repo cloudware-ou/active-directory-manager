@@ -2,28 +2,25 @@ package com.nortal.activedirectoryrestapi.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class CommandWorker {
-
+    private final Logger logger = LoggerFactory.getLogger(CommandWorker.class);
     private final CommandService commandService;
     private final JSONHandler jsonHandler;
     private final ErrorHandler errorHandler;
     private final NotificationListener notificationListener;
-
 
     public Command waitForResult(Long id) throws InterruptedException {
         return notificationListener.getCompletedCommand(id);
@@ -46,6 +43,7 @@ public class CommandWorker {
         } catch (ADCommandExecutionException e) {
             return errorHandler.createErrorResponse(e);
         } catch (Exception e) {
+            logger.error(e.getMessage(), e);
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -59,7 +57,8 @@ public class CommandWorker {
             JsonNode json = jsonHandler.convertToJson(params);
             return submitJob(command, json, HttpStatus.OK);
         }catch (JsonProcessingException e){
-            return ResponseEntity.badRequest().body(e.getMessage());
+            logger.error(e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
 
