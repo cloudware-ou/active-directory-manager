@@ -1,15 +1,16 @@
 try {
-    Add-Type -Path "./npgsql/lib/net8.0/Npgsql.dll"
-    Add-Type -Path "./microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
-    Add-Type -Path "./sodium.core/lib/netstandard2.1/Sodium.Core.dll"
+    Add-Type -Path "../npgsql/lib/net8.0/Npgsql.dll"
+    Add-Type -Path "../microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
+    Add-Type -Path "../sodium.core/lib/netstandard2.1/Sodium.Core.dll"
+    Import-Module ./CryptoService.ps1
     Write-Verbose "Assemblies loaded successfully."
 } catch {
     Throw "Failed to load assemblies: $_"
 }
 
-. ./CryptoService.ps1
 
-$global:privatekeyfile = "privatekey"
+
+$global:privatekeyfile = "../privatekey"
 $Global:MySession = $null
 $Global:mutex = New-Object System.Threading.Mutex $false, "NotificationHandlerMutex"
 $global:cryptoService = [CryptoService]::new()
@@ -119,13 +120,14 @@ function Update-CommandStatus {
 }
 
 function Start-PSSession {
-    try {
-        Write-Host "Starting a new PSSession..." -ForegroundColor Green
-        $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
-        Write-Host "PSSession started successfully." -ForegroundColor Green
-    } catch {
-        throw "Error starting PSSession $_"
+
+    Write-Host "Starting a new PSSession..." -ForegroundColor Green
+    $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
+    if ($null -eq $Global:MySession){
+        Throw "Error starting PSSession"
     }
+    Write-Host "PSSession started successfully." -ForegroundColor Green
+
 }
 
 # Function to execute an AD command on a remote server
@@ -189,7 +191,8 @@ function Invoke-ADCommand {
             if ($_.Exception.Message -like "*one or more jobs are blocked waiting for user interaction*") {
                 Stop-Job -Job $job
                 $result = "You forgot to supply some of the mandatory parameters."
-                
+            } elseif ($null -eq $invokeResult) {
+                $result = "A network error occured."
             } else {
                 $result = $_.Exception.Message
             }
@@ -197,7 +200,7 @@ function Invoke-ADCommand {
         }
 
         if ($exitCode -eq 1){
-            Write-Host "Command completed with error"
+            Write-Host "Command completed with error"  -ForegroundColor Red
         }
 
         # Convert the result to a string representation
@@ -301,10 +304,11 @@ $notificationHandler = {
     $Global:mutex.ReleaseMutex()
 }
 
+
+
 try {
     Start-PSSession
     $conn = Get-PostgreSQLConnection
-
     Write-Host "Welcome! The script will proceed with listening to the database for new pending commands to execute"
     Write-Host "In order to quit please press 'Ctrl+C'..."
     Write-Host ""
@@ -320,9 +324,7 @@ try {
         # Wait for a notification
         $conn.Wait(1000) | Out-Null
     }
-
-} catch {
-    throw "An error occurred: $_"
-} finally {
     $conn.Close()
+} catch {
+    Throw "An error occurred: $_"
 }

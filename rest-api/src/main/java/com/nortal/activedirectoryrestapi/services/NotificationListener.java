@@ -34,8 +34,7 @@ public class NotificationListener {
             try (Connection connection = dataSource.getConnection();
                  Statement statement = connection.createStatement()) {
 
-                statement.execute("LISTEN completed_commands;");
-                statement.execute("LISTEN one_time_keys_bob");
+                statement.execute("LISTEN completed_commands;LISTEN one_time_keys_bob;");
 
                 PGConnection pgConnection = connection.unwrap(PGConnection.class);
 
