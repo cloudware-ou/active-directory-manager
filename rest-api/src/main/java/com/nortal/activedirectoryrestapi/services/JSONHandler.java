@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,7 +19,12 @@ public class JSONHandler {
 
     private final CryptoService cryptoService;
 
-    public JsonNode convertToJson(MultiValueMap<String, Object> multiValueMap) throws JsonProcessingException {
+    /**
+     * Converts MultiValueMap to JSON
+     * @param multiValueMap MultiValueMap object
+     * @return JSON object
+     */
+    public JsonNode convertToJson(MultiValueMap<String, Object> multiValueMap) {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.valueToTree(
                 multiValueMap.entrySet().stream()
@@ -28,8 +34,11 @@ public class JSONHandler {
                         )));
     }
 
-    public void secureJson(JsonNode payload) throws Exception {
-
+    /**
+     * Encrypts selected fields of JSON, initiates DH Key Exchange
+     * @param payload JSON, part of which should be encrypted
+     */
+    public void secureJson(JsonNode payload) {
         List<String> fieldsToEncrypt = List.of("AccountPassword", "NewPassword", "OldPassword");
         for (String field : fieldsToEncrypt) {
             if (payload.has(field)) {

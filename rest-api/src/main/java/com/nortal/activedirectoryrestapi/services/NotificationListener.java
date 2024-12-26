@@ -28,8 +28,11 @@ public class NotificationListener {
     private final ConcurrentHashMap<Long, BlockingQueue<Command>> completedCommandsQueue = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, BlockingQueue<OneTimeKeys>> oneTimeKeysQueue = new ConcurrentHashMap<>();
 
+    /**
+     * Listens for incoming PostgreSQL notifications on selected channels.
+     */
     @PostConstruct
-    public void startListening() {
+    private void startListening() {
         new Thread(() -> {
             try (Connection connection = dataSource.getConnection();
                  Statement statement = connection.createStatement()) {
@@ -72,11 +75,23 @@ public class NotificationListener {
         return oneTimeKeysQueue.computeIfAbsent(key, k -> new LinkedBlockingQueue<>());
     }
 
-    public Command getCompletedCommand(Long id) throws InterruptedException {
-        return getCompletedCommandsQueue(id).take();
+    public Command getCompletedCommand(Long id) {
+        try {
+            return getCompletedCommandsQueue(id).take();
+        } catch (InterruptedException e) {
+            String errorMessage = "Waiting for completed command interrupted";
+            logger.error(errorMessage, e);
+            throw new RuntimeException(errorMessage, e);
+        }
     }
 
-    public OneTimeKeys getOneTimeKeys(Long id) throws InterruptedException {
-        return getOneTimeKeysQueue(id).take();
+    public OneTimeKeys getOneTimeKeys(Long id) {
+        try {
+            return getOneTimeKeysQueue(id).take();
+        } catch (InterruptedException e) {
+            String errorMessage = "Waiting for one-time key interrupted";
+            logger.error(errorMessage, e);
+            throw new RuntimeException(errorMessage, e);
+        }
     }
 }

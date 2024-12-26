@@ -3,28 +3,29 @@ try {
     Import-Module ../microsoft.extentions.logging.abstractions/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
     Import-Module ../sodium.core/lib/netstandard2.1/Sodium.Core.dll
     Import-Module ./CryptoService.ps1
+    Import-Module ./SessionManager.ps1
     Write-Verbose "Assemblies loaded successfully."
 } catch {
     Throw "Failed to load assemblies: $_"
 }
 
-
-
-$global:privatekeyfile = "../privatekey"
-$Global:MySession = $null
 $Global:mutex = New-Object System.Threading.Mutex $false, "NotificationHandlerMutex"
-$global:cryptoService = [CryptoService]::new()
+$Global:cryptoService = [CryptoService]::new()
 
 # Define the SSH options in a hashtable
-$Global:sshOptions = @{
+$sshOptions = @{
     ServerAliveInterval = 30  # Send a keepalive message every 30 seconds
     ServerAliveCountMax = 2   # Terminate the connection if no response after 2 keepalive messages
     TCPKeepAlive = "yes"      # Enable TCP keepalive messages
 }
+
+$privatekeyfile = "../privatekey"
+$Global:sessionManager = [SessionManager]::new($Env:ADServer, $Env:ADUsername, $privatekeyfile, $sshOptions)
+
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
     try {
-        $connString = "Host=$Env:db_host;Port=$Env:db_port;Username=$Env:db_user;Password=$Env:db_password;Database=$Env:db_name"
+        $connString = "Host=$Env:db_host;Port=$Env:db_port;Username=$Env:db_user;Password=$Env:db_password;Database=$Env:db_name;Include Error Detail=true"
         $conn = [Npgsql.NpgsqlConnection]::new($connString)
         $conn.Open()
 
@@ -84,7 +85,7 @@ function Update-CommandStatus {
         [ValidateSet("PENDING", "PROCESSING", "COMPLETED")]
         [string]$Status,
 
-        [string]$Result = $null,
+        $Result = $null,
         [int] $ExitCode = $null
     )
 
@@ -105,7 +106,9 @@ function Update-CommandStatus {
         $cmd.Parameters.AddWithValue("@CommandId", $CommandId) | Out-Null
 
         if ($null -ne $Result) {
-            $cmd.Parameters.AddWithValue("@Result", $Result) | Out-Null
+            $param = [Npgsql.NpgsqlParameter]::new("@Result", [NpgsqlTypes.NpgsqlDbType]::Json)
+            $param.Value = $Result
+            $cmd.Parameters.Add($param) | Out-Null
         }
         if ($null -ne $ExitCode) {
             $cmd.Parameters.AddWithValue("@ExitCode", $ExitCode) | Out-Null
@@ -119,16 +122,6 @@ function Update-CommandStatus {
     }
 }
 
-function Start-PSSession {
-
-    Write-Host "Starting a new PSSession..." -ForegroundColor Green
-    $Global:MySession = New-PSSession -HostName $Env:ADServer -UserName $Env:ADUsername -KeyFilePath $global:privatekeyfile -Options $Global:sshOptions
-    if ($null -eq $Global:MySession){
-        Throw "Error starting PSSession"
-    }
-    Write-Host "PSSession started successfully." -ForegroundColor Green
-
-}
 
 # Function to execute an AD command on a remote server
 function Invoke-ADCommand {
@@ -162,28 +155,21 @@ function Invoke-ADCommand {
         foreach ($passwordArg in ('AccountPassword', 'NewPassword', 'OldPassword')){
             if ($Arguments.ContainsKey($passwordArg)) {
                 $enc = $Arguments[$passwordArg]
-                $Arguments[$passwordArg] = ConvertTo-SecureString $global:cryptoService.Decrypt($enc["ciphertext"], $enc["iv"]) -AsPlainText -Force
+                $Arguments[$passwordArg] = ConvertTo-SecureString $Global:cryptoService.Decrypt($enc["ciphertext"], $enc["iv"]) -AsPlainText -Force
             }
         }
 
-        if ($global:cryptoService.HasValidSharedSecret) {
-            $global:cryptoService.EraseSharedSecret()
+        if ($Global:cryptoService.HasValidSharedSecret) {
+            $Global:cryptoService.EraseSharedSecret()
         }
 
-        if ($null -eq $Global:MySession -or $Global:MySession.State -ne "Opened") {
-            Write-Host "PSsession state: $($Global:MySession.State), $Global:MySession"
-            Write-Host "PSSession is not active. Attempting to restart..." -ForegroundColor Yellow
-            if ($null -ne $Global:MySession) {
-                Remove-PSSession -Session $Global:MySession -ErrorAction SilentlyContinue
-            }
-            Start-PSSession
-        }
+        $Global:sessionManager.RestartPSSessionIfNeeded($true)
 
         $result = ""
         $exitCode = 0
         
         try {
-            $job = Invoke-Command -Session $Global:MySession -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
+            $job = Invoke-Command -Session $Global:sessionManager.psSession -ScriptBlock $scriptBlock -ArgumentList $ADCommand, $Arguments -AsJob
             $job | Wait-Job -Timeout 30
             $invokeResult = Receive-Job -Job $job
             $result = $invokeResult[0]
@@ -195,7 +181,7 @@ function Invoke-ADCommand {
             } elseif ($null -eq $invokeResult) {
                 $result = "A network error occured."
             } else {
-                $result = $_.Exception.Message
+                $result = $_.Exception.Message.Trim()
             }
             $exitCode = 1
             Stop-Job -Job $job
@@ -211,11 +197,15 @@ function Invoke-ADCommand {
         $resultString = if ($result) {
             if ($exitCode -eq 0){
                 $result | ConvertTo-Json -AsArray
+                
             } else {
-                $result
+                @{
+                    ErrorMessage = $result
+                } | ConvertTo-Json
             }
             
         } else {
+
             @{
                 Message  = "The command $ADCommand completed successfully with no output." 
             } | ConvertTo-Json
@@ -243,7 +233,7 @@ function HandleKeys{
     $alicePublicKeyDer = [Convert]::FromBase64String($reader["alice_public_key"])
     $reader.Close()
 
-    $bobPublicKeyDer = $global:cryptoService.ExchangeKeys($alicePublicKeyDer)
+    $bobPublicKeyDer = $Global:cryptoService.ExchangeKeys($alicePublicKeyDer)
     $bobPublicKeyBase64 = [Convert]::ToBase64String($bobPublicKeyDer)
 
     $query = "UPDATE one_time_keys SET bob_public_key = @BobPublicKey WHERE id = @Id;"
@@ -316,7 +306,7 @@ $notificationHandler = {
 
 
 try {
-    Start-PSSession
+    $Global:sessionManager.StartPSSession($true)
     $conn = Get-PostgreSQLConnection
     Write-Host "Welcome! The script will proceed with listening to the database for new pending commands to execute"
     Write-Host "In order to quit please press 'Ctrl+C'..."

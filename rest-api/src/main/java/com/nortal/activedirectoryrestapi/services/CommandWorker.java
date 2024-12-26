@@ -16,50 +16,41 @@ import org.springframework.util.MultiValueMap;
 @Service
 @RequiredArgsConstructor
 public class CommandWorker {
-    private final Logger logger = LoggerFactory.getLogger(CommandWorker.class);
     private final CommandService commandService;
     private final JSONHandler jsonHandler;
     private final ErrorHandler errorHandler;
     private final NotificationListener notificationListener;
 
-    public Command waitForResult(Long id) throws InterruptedException {
+    public Command waitForResult(Long id) {
         return notificationListener.getCompletedCommand(id);
     }
 
-    public Command executeCommand(String command, String payload) throws ADCommandExecutionException, InterruptedException {
-            Long id = commandService.saveCommand(command, payload);
-            Command entity = this.waitForResult(id);
-            if (entity.getExitCode() == 0){
-                return entity;
-            } else {
-                throw new ADCommandExecutionException(entity.getCommand(), entity.getResult(), entity.getTimestamp());
-            }
-    }
-
-    public ResponseEntity<String> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode) {
-        try{
-            jsonHandler.secureJson(payload);
-            return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, payload.toPrettyString()).getResult());
-        } catch (ADCommandExecutionException e) {
-            return errorHandler.createErrorResponse(e);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(e.getMessage());
+    public Command executeCommand(String command, JsonNode payload) throws ADCommandExecutionException {
+        Long id = commandService.saveCommand(command, payload);
+        Command entity = this.waitForResult(id);
+        if (entity.getExitCode() == 0){
+            return entity;
+        } else {
+            throw new ADCommandExecutionException(entity.getCommand(), entity.getResult(), entity.getTimestamp());
         }
     }
 
-    public ResponseEntity<String> submitJob(String command, JsonNode payload){
+    public ResponseEntity<JsonNode> submitJob(String command, JsonNode payload, HttpStatusCode httpStatusCode) {
+        try{
+            jsonHandler.secureJson(payload);
+            return ResponseEntity.status(httpStatusCode).body(this.executeCommand(command, payload).getResult());
+        } catch (ADCommandExecutionException e) {
+            return errorHandler.createErrorResponse(e);
+        }
+    }
+
+    public ResponseEntity<JsonNode> submitJob(String command, JsonNode payload){
         return submitJob(command, payload, HttpStatus.OK);
     }
 
-    public ResponseEntity<String> submitJob(String command, MultiValueMap<String, Object> params){
-        try {
-            JsonNode json = jsonHandler.convertToJson(params);
-            return submitJob(command, json, HttpStatus.OK);
-        }catch (JsonProcessingException e){
-            logger.error(e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+    public ResponseEntity<JsonNode> submitJob(String command, MultiValueMap<String, Object> params){
+        JsonNode json = jsonHandler.convertToJson(params);
+        return submitJob(command, json, HttpStatus.OK);
     }
 
 

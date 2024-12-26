@@ -1,5 +1,6 @@
 package com.nortal.activedirectoryrestapi.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -13,10 +14,10 @@ public class CommandService {
     private EntityManager entityManager;
 
     @Transactional
-    public Long saveCommand(String command, String params) {
+    public Long saveCommand(String command, JsonNode args) {
         Command commandEntity = new Command();
         commandEntity.setCommand(command);
-        commandEntity.setArguments(params);
+        commandEntity.setArguments(args);
         commandEntity.setCommandStatus("PENDING");
         entityManager.persist(commandEntity);
         entityManager.flush();  // Ensure the entity is saved immediately

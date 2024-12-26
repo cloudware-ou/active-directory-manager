@@ -1,9 +1,13 @@
 package com.nortal.activedirectoryrestapi.entities;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.nortal.activedirectoryrestapi.converters.JsonAttributeConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.Type;
 
 import java.time.OffsetDateTime;
 
@@ -19,14 +23,18 @@ public class Command {
     @NotNull
     private String command;
 
-    @Column(columnDefinition = "TEXT")
-    private String arguments;
+    @Column(columnDefinition = "JSON")
+    @Convert(converter = JsonAttributeConverter.class)
+    @ColumnTransformer(write = "?::json")
+    private JsonNode arguments;
 
     @NotNull
     private String commandStatus;
 
-    @Column(columnDefinition = "TEXT")
-    private String result;
+    @Column(columnDefinition = "JSON")
+    @Convert(converter = JsonAttributeConverter.class)
+    @ColumnTransformer(write = "?::json")
+    private JsonNode result;
 
     private Integer exitCode;
 
