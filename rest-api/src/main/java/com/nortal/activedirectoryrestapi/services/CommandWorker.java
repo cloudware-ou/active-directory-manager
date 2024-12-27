@@ -1,12 +1,9 @@
 package com.nortal.activedirectoryrestapi.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;

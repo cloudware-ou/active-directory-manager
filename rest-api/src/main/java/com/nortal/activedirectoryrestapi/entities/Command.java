@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
-import org.hibernate.annotations.Type;
 
 import java.time.OffsetDateTime;
 

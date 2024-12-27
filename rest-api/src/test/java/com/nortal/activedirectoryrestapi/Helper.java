@@ -15,7 +15,6 @@ public class Helper {
     @Autowired
     private TestRestTemplate restTemplate = new TestRestTemplate();
 
-
     public void deleteIfExists(String identity, String baseUrl) {
         MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
         params.add("Identity", identity);
