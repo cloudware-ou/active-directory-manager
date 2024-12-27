@@ -28,7 +28,7 @@ public class CommandWorker {
         if (entity.getExitCode() == 0){
             return entity;
         } else {
-            throw new ADCommandExecutionException(entity.getCommand(), entity.getResult(), entity.getTimestamp());
+            throw new ADCommandExecutionException(entity.getCommand(), entity.getResult(), entity.getExitCode(), entity.getTimestamp());
         }
     }
 

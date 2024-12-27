@@ -11,5 +11,6 @@ import java.time.OffsetDateTime;
 public class ADCommandExecutionException extends Exception {
     private final String command;
     private final JsonNode error;
+    private final int statusCode;
     private final OffsetDateTime timestamp;
 }

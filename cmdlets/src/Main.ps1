@@ -145,9 +145,15 @@ function Invoke-ADCommand {
                 $output = & $cmd @arguments
                 $result = $output
                 
+            } catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]{
+                $result = $_.Exception.Message
+                $exitCode = 409
+            } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]{
+                $result = $_.Exception.Message
+                $exitCode = 404
             } catch {
-                $result = $_.Exception.Message.Trim()
-                $exitCode = 1
+                $result = $_.Exception.Message
+                $exitCode = 400
             }
             Write-Output @($result, $exitCode)
         }
