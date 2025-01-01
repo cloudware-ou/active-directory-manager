@@ -28,6 +28,17 @@ public class UserTests {
 
     private final Helper helper = new Helper();
 
+    private final String newUserPayload = "{"
+            + "\"Name\": \"Test User\","
+            + "\"GivenName\": \"Test\","
+            + "\"Surname\": \"User\","
+            + "\"SamAccountName\": \"testuser\","
+            + "\"UserPrincipalName\": \"testuser@domain.com\","
+            + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
+            + "\"Enabled\": true,"
+            + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
+            + "}";
+
 
     @BeforeEach
     public void setUp() {
@@ -43,31 +54,21 @@ public class UserTests {
 
 
     @Test
-    public void testCreateNewUser() throws Exception {
-        String payload = "{"
-                + "\"Name\": \"Test User\","
-                + "\"GivenName\": \"Test\","
-                + "\"Surname\": \"User\","
-                + "\"SamAccountName\": \"testuser\","
-                + "\"UserPrincipalName\": \"testuser@domain.com\","
-                + "\"Path\": \"CN=Users,DC=Domain,DC=ee\","
-                + "\"Enabled\": true,"
-                + "\"AccountPassword\": \"ComplexP@ssw0rd4567\""
-                + "}";
+    public void testCreateNewUser() {
 
         createdUserSamAccountName = "testuser";
 
         String url = getBaseUrl() + "/users";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+        HttpEntity<String> entity = new HttpEntity<>(newUserPayload, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
     @Test
-    public void testUpdateUser() throws Exception {
+    public void testUpdateUser() {
 
         helper.createTestUser(getBaseUrl()+"/users");
 
@@ -92,13 +93,35 @@ public class UserTests {
     }
 
     @Test
-    public void testGetUsers() {
+    public void testCreateTheSameUserAgain() {
+        helper.createTestUser(getBaseUrl()+"/users");
+        String url = getBaseUrl() + "/users";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(newUserPayload, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        createdUserSamAccountName = "testuser";
+    }
+
+    @Test
+    public void testGetUsers1() {
 
         String url = getBaseUrl() + "/users?Filter=*&SearchBase=DC=Domain,DC=ee";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(Objects.requireNonNull(response.getBody()).contains("testuser2"));
+    }
+
+    @Test
+    public void testGetUsers2() {
+
+        String url = getBaseUrl() + "/users?Identity=nonexistinguser";
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
 }

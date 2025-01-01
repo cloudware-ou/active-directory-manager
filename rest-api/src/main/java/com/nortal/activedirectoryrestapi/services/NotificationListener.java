@@ -2,6 +2,7 @@ package com.nortal.activedirectoryrestapi.services;
 
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.entities.OneTimeKeys;
+import com.nortal.activedirectoryrestapi.exceptions.TerminatingError;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.postgresql.PGConnection;
@@ -79,9 +80,7 @@ public class NotificationListener {
         try {
             return getCompletedCommandsQueue(id).take();
         } catch (InterruptedException e) {
-            String errorMessage = "Waiting for completed command interrupted";
-            logger.error(errorMessage, e);
-            throw new RuntimeException(errorMessage, e);
+            throw new TerminatingError("Waiting for completed command interrupted", e);
         }
     }
 
@@ -89,9 +88,7 @@ public class NotificationListener {
         try {
             return getOneTimeKeysQueue(id).take();
         } catch (InterruptedException e) {
-            String errorMessage = "Waiting for one-time key interrupted";
-            logger.error(errorMessage, e);
-            throw new RuntimeException(errorMessage, e);
+            throw new TerminatingError("Waiting for one-time key interrupted", e);
         }
     }
 }

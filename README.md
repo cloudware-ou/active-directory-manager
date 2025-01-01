@@ -148,5 +148,11 @@ The pipeline performs the following steps:
 
 This pipeline ensures that the application is tested and built in a repeatable and automated manner, reducing the potential for errors during manual setup.
 
+### License
+
+Active Directory Manager is licensed under the terms and conditions of the GNU Affero General Public License, Version 3.0.
+
+If you would like to use Active Directory Manager in a proprietary software project, then it is possible to enter into a licensing agreement which makes Active Directory Manager available under the terms and conditions of the BSD 3-Clause License instead.
+
 
 

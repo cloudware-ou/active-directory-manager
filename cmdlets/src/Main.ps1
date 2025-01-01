@@ -134,8 +134,6 @@ function Invoke-ADCommand {
     try {
         $scriptBlock = {
             param($cmd, $arguments)
-            $result = ""
-            $exitCode = 0
             try {
                 $Command = Get-Command $cmd
                 if ($Command.Parameters.ContainsKey("Confirm")) {
@@ -143,25 +141,28 @@ function Invoke-ADCommand {
                     $arguments["Confirm"] = $false
                 }
                 $output = & $cmd @arguments
-                $result = $output
-                
+                Write-Output @($output, 0)
             } catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]{
-                $result = $_.Exception.Message
-                $exitCode = 409
+                Write-Output @($_.Exception.Message, 409)
             } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]{
-                $result = $_.Exception.Message
-                $exitCode = 404
+                Write-Output @($_.Exception.Message, 404)
             } catch {
-                $result = $_.Exception.Message
-                $exitCode = 400
+                Write-Output @($_.Exception.Message, 400)
             }
-            Write-Output @($result, $exitCode)
         }
 
         foreach ($passwordArg in ('AccountPassword', 'NewPassword', 'OldPassword')){
             if ($Arguments.ContainsKey($passwordArg)) {
                 $enc = $Arguments[$passwordArg]
-                $Arguments[$passwordArg] = ConvertTo-SecureString $Global:cryptoService.Decrypt($enc["ciphertext"], $enc["iv"]) -AsPlainText -Force
+                $byteArray = $Global:cryptoService.Decrypt($enc["ciphertext"], $enc["iv"])
+
+                $password = [SecureString]::new()
+                
+                foreach ($a in $byteArray){
+                    $password.AppendChar([char]$a)
+                }
+                [Array]::Clear($byteArray, 0, $byteArray.Length)
+                $Arguments[$passwordArg] = $password
             }
         }
 
@@ -195,7 +196,7 @@ function Invoke-ADCommand {
             Remove-Job -Job $job
         }
 
-        if ($exitCode -eq 1){
+        if ($exitCode -ne 0){
             Write-Host "Command completed with error"  -ForegroundColor Red
         }
 
@@ -209,7 +210,7 @@ function Invoke-ADCommand {
                     ErrorMessage = $result
                 } | ConvertTo-Json
             }
-            
+
         } else {
 
             @{

@@ -1,6 +1,7 @@
 package com.nortal.activedirectoryrestapi.services;
 
 import com.nortal.activedirectoryrestapi.entities.OneTimeKeys;
+import com.nortal.activedirectoryrestapi.exceptions.TerminatingError;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,9 +9,9 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.*;
+import java.util.Arrays;
 import java.util.Base64;
 
 @RequiredArgsConstructor
@@ -47,39 +48,33 @@ public class CryptoService {
             ka.doPhase(bobPublicKey, true);
             sharedSecret = ka.generateSecret();
         } catch (Exception e) {
-            String errorMessage = "Error while generating shared secret";
-            logger.error(errorMessage, e);
-            throw new RuntimeException(errorMessage, e);
+            throw new TerminatingError("Error while generating shared secret", e);
         }
     }
 
     /**
-     * Encrypts plaintext with AES algorithm using the derived shared key.
-     * @param plaintext plaintext to encrypt.
+     * Encrypts bytes with AES algorithm using the derived shared key.
+     * @param bytes bytes to encrypt.
      * @return a 2-element array with IV and ciphertext, both encoded in base64.
      */
-    public String[] encrypt(String plaintext) {
-        SecretKeySpec secretKey = new SecretKeySpec(sharedSecret,"AES");
+    public String[] encrypt(byte[] bytes) {
         try {
+            SecretKeySpec secretKey = new SecretKeySpec(sharedSecret,"AES");
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             byte[] iv = cipher.getIV();
-            byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+            byte[] ciphertext = cipher.doFinal(bytes);
             return new String[]{Base64.getEncoder().encodeToString(iv), Base64.getEncoder().encodeToString(ciphertext)};
         } catch (Exception e) {
-            String errorMessage = "Encryption error";
-            logger.error(errorMessage, e);
-            throw new RuntimeException(errorMessage, e);
+            throw new TerminatingError("Encryption error", e);
         }
-
     }
 
     /**
      * Securely erases the shared secret with random bytes and then sets to null.
      */
     public void eraseSharedSecret() {
-        SecureRandom random = new SecureRandom();
-        random.nextBytes(sharedSecret);
+        securelyEraseByteArray(sharedSecret);
         sharedSecret = null;
     }
 
@@ -90,4 +85,10 @@ public class CryptoService {
     public boolean hasValidSharedSecret() {
         return sharedSecret != null;
     }
+
+    public void securelyEraseByteArray(byte[] bytes) {
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(bytes);
+    }
+
 }

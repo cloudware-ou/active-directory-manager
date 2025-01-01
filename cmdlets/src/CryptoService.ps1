@@ -38,7 +38,7 @@ class CryptoService {
     
     }
 
-    [string]Decrypt([string]$CiphertextBase64, [string]$IVBase64){
+    [byte[]]Decrypt([string]$CiphertextBase64, [string]$IVBase64){
 
         try{
             $ciphertext = [Convert]::FromBase64String($CiphertextBase64)
@@ -56,12 +56,12 @@ class CryptoService {
             $memoryStream = New-Object System.IO.MemoryStream
             $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($memoryStream, $decryptor, [System.Security.Cryptography.CryptoStreamMode]::Write)
             $cryptoStream.Write($ciphertext, 0, $ciphertext.Length)
-            $cryptoStream.Close()
+            $cryptoStream.Dispose()
             $DecryptedData = $memoryStream.ToArray()
-            $memoryStream.Close()
+            $memoryStream.Dispose()
             
 
-            return [Text.Encoding]::UTF8.GetString($DecryptedData)
+            return $DecryptedData
         } catch {
             Throw "An error occured: $_"
         }

@@ -31,7 +31,7 @@ class SessionManager{
         }
 
         if ($this.psSession.State -ne "Opened") {
-            Write-Host "PSSession is in the $($this.psSession.State) state. Attempting to restart..." -ForegroundColor Yellow
+            Write-Host "PSSession is in a $($this.psSession.State) state. Attempting to restart..." -ForegroundColor Yellow
             Remove-PSSession -Session $this.psSession -ErrorAction SilentlyContinue
             $this.StartPSSession($verbose)
         }
