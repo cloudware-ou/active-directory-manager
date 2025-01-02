@@ -59,21 +59,20 @@ class CryptoService {
             $cryptoStream.Dispose()
             $DecryptedData = $memoryStream.ToArray()
             $memoryStream.Dispose()
-            
-
             return $DecryptedData
         } catch {
             Throw "An error occured: $_"
         }
     }
 
-    [void] EraseSharedSecret() {
-        # Erase shared secret
-        for ($i = 0; $i -lt $this.sharedSecret.Length; $i++) {
-            $this.sharedSecret[$i] = Get-Random -Minimum 0 -Maximum 256
+    [void] EraseByteArray($byteArray){
+        for ($i = 0; $i -lt $byteArray.Length; $i++) {
+            $byteArray[$i] = Get-Random -Minimum 0 -Maximum 256
         }
-        
-        # Set the variable to null
+    }
+
+    [void] EraseSharedSecret() {
+        $this.EraseByteArray($this.sharedSecret)
         $this.sharedSecret = $null
     }
 

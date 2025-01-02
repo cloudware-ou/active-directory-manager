@@ -155,18 +155,20 @@ function Invoke-ADCommand {
             if ($Arguments.ContainsKey($passwordArg)) {
                 $enc = $Arguments[$passwordArg]
                 $byteArray = $Global:cryptoService.Decrypt($enc["ciphertext"], $enc["iv"])
-
+                $charArray = [System.Text.Encoding]::UTF8.GetChars($byteArray)
                 $password = [SecureString]::new()
                 
-                foreach ($a in $byteArray){
-                    $password.AppendChar([char]$a)
+                foreach ($a in $charArray){
+                    $password.AppendChar($a)
                 }
-                [Array]::Clear($byteArray, 0, $byteArray.Length)
+                $Global:cryptoService.EraseByteArray($byteArray)
+                $charArray.Clear()
+
                 $Arguments[$passwordArg] = $password
             }
         }
 
-        if ($Global:cryptoService.HasValidSharedSecret) {
+        if ($Global:cryptoService.HasValidSharedSecret()) {
             $Global:cryptoService.EraseSharedSecret()
         }
 

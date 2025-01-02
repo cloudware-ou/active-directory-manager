@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -64,11 +67,13 @@ public class CommandWorker {
     }
 
     public byte[] convertCharArrayToByteArray(char[] c) {
-        byte[] result = new byte[c.length];
-        for (int i = 0; i < c.length; i++) {
-            result[i] = (byte) c[i];
-        }
-        return result;
+        CharBuffer charBuffer = CharBuffer.wrap(c);
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
+        byte[] bytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(bytes);
+        charBuffer.clear();
+        byteBuffer.clear();
+        return bytes;
     }
 
     /**
