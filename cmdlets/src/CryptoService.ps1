@@ -65,7 +65,7 @@ class CryptoService {
         }
     }
 
-    [void] EraseByteArray($byteArray){
+    [void] EraseByteArray([byte[]]$byteArray){
         for ($i = 0; $i -lt $byteArray.Length; $i++) {
             $byteArray[$i] = Get-Random -Minimum 0 -Maximum 256
         }
