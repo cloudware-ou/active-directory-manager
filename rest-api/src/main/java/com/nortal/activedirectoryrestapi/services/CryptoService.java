@@ -91,4 +91,11 @@ public class CryptoService {
         random.nextBytes(bytes);
     }
 
+    public void securelyEraseCharArray(char[] chars) {
+        SecureRandom random = new SecureRandom();
+        for (int i = 0; i < chars.length; i++) {
+            chars[i] = (char) random.nextInt(Character.MAX_VALUE); // Random char in the valid range
+        }
+    }
+
 }

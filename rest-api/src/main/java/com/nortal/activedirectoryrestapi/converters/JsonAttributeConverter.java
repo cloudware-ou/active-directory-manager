@@ -3,15 +3,12 @@ package com.nortal.activedirectoryrestapi.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nortal.activedirectoryrestapi.exceptions.TerminatingError;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Converter
 public class JsonAttributeConverter implements AttributeConverter<JsonNode, String> {
-
-    private final Logger logger = LoggerFactory.getLogger(JsonAttributeConverter.class);
 
     @Override
     public String convertToDatabaseColumn(JsonNode attribute) {
@@ -24,9 +21,7 @@ public class JsonAttributeConverter implements AttributeConverter<JsonNode, Stri
         try {
             return objectMapper.readTree(dbData);
         } catch (JsonProcessingException e) {
-            String errorMessage = "Error converting to JSON object";
-            logger.error(errorMessage, e);
-            throw new RuntimeException(errorMessage, e);
+            throw new TerminatingError("Error converting to JSON object", e);
         }
     }
 }

@@ -89,10 +89,11 @@ public class CommandWorker {
 
                 char[] password_chars = (char[]) payload.get(field);
                 byte[] password_bytes = convertCharArrayToByteArray(password_chars);
-                Arrays.fill(password_chars, '\u0000');
+                cryptoService.securelyEraseCharArray(password_chars);
 
                 String[] cipher = cryptoService.encrypt(password_bytes);
                 cryptoService.securelyEraseByteArray(password_bytes);
+
                 payload.put(field, Map.of("iv", cipher[0], "ciphertext", cipher[1]));
 
             }

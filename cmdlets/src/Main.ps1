@@ -161,8 +161,12 @@ function Invoke-ADCommand {
                 foreach ($a in $charArray){
                     $password.AppendChar($a)
                 }
-                $Global:cryptoService.EraseByteArray($byteArray)
-                $charArray.Clear()
+
+                $Global:cryptoService.SecurelyEraseByteArray($byteArray)
+                $Global:cryptoService.SecurelyEraseCharArray($charArray)
+                
+                # ONLY IN TESTING ENVIRONMENT!!!
+                # Write-Host (ConvertFrom-SecureString -SecureString $password -AsPlainText)
 
                 $Arguments[$passwordArg] = $password
             }

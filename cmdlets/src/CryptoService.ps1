@@ -65,14 +65,21 @@ class CryptoService {
         }
     }
 
-    [void] EraseByteArray([byte[]]$byteArray){
-        for ($i = 0; $i -lt $byteArray.Length; $i++) {
-            $byteArray[$i] = Get-Random -Minimum 0 -Maximum 256
+    [void] SecurelyEraseArray($array, [int]$min, [int]$max){
+        for ($i = 0; $i -lt $array.Length; $i++) {
+            $array[$i] = Get-SecureRandom -Minimum $min -Maximum $max
         }
+    }
+    [void] SecurelyEraseByteArray([byte[]] $byteArray){
+        $this.SecurelyEraseArray($byteArray, 0, 256)
+    }
+
+    [void] SecurelyEraseCharArray([char[]] $charArray){
+        $this.SecurelyEraseArray($charArray, 0, 65535)
     }
 
     [void] EraseSharedSecret() {
-        $this.EraseByteArray($this.sharedSecret)
+        $this.SecurelyEraseByteArray($this.sharedSecret)
         $this.sharedSecret = $null
     }
 
