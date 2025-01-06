@@ -78,7 +78,7 @@ public class GroupTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
-        ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
+        ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PATCH, updateEntity, String.class);
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
@@ -87,7 +87,12 @@ public class GroupTests {
     @Test
     public void testGetGroups() {
         String url = getBaseUrl() + "/groups?Filter=*&SearchBase=DC=Domain,DC=ee";
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(Objects.requireNonNull(response.getBody()).contains("TestGroup3"));

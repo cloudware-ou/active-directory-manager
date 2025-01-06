@@ -1,6 +1,5 @@
 package com.nortal.activedirectoryrestapi.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class JSONHandler {
      * @param map Map object
      * @return JSON object
      */
-    public JsonNode convertToJson(Map<String, Object> map) throws JsonProcessingException {
+    public JsonNode convertToJson(Map<String, Object> map){
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.valueToTree(map);
     }

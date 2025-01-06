@@ -1,6 +1,5 @@
 package com.nortal.activedirectoryrestapi.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nortal.activedirectoryrestapi.entities.Command;
 import com.nortal.activedirectoryrestapi.exceptions.ADCommandExecutionException;
@@ -14,7 +13,6 @@ import org.springframework.util.MultiValueMap;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
 
 @Service
@@ -49,12 +47,8 @@ public class CommandWorker {
     }
 
     public ResponseEntity<JsonNode> submitJob(String command, Map<String, Object> payload, HttpStatusCode httpStatusCode) {
-        this.secureJson(payload);
-        try {
-            return submitJob(command, jsonHandler.convertToJson(payload), httpStatusCode);
-        } catch (JsonProcessingException e) {
-            return errorHandler.createErrorResponse(e);
-        }
+        this.encryptPasswordFields(payload);
+        return submitJob(command, jsonHandler.convertToJson(payload), httpStatusCode);
     }
 
     public ResponseEntity<JsonNode> submitJob(String command, Map<String, Object> payload){
@@ -66,6 +60,11 @@ public class CommandWorker {
         return submitJob(command, json, HttpStatus.OK);
     }
 
+    /**
+     * Converts UTF-8 char array to byte array
+     * @param c UTF-8 char array
+     * @return byte array
+     */
     public byte[] convertCharArrayToByteArray(char[] c) {
         CharBuffer charBuffer = CharBuffer.wrap(c);
         ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
@@ -78,9 +77,9 @@ public class CommandWorker {
 
     /**
      * Encrypts selected fields of Map, initiates DH Key Exchange
-     * @param payload JSON, part of which should be encrypted
+     * @param payload Map, part of which should be encrypted
      */
-    public void secureJson(Map<String, Object> payload) {
+    public void encryptPasswordFields(Map<String, Object> payload) {
 
         String[] fieldsToEncrypt = new String[]{"AccountPassword", "NewPassword", "OldPassword"};
         for (String field : fieldsToEncrypt) {

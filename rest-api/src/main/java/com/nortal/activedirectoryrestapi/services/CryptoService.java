@@ -3,21 +3,18 @@ package com.nortal.activedirectoryrestapi.services;
 import com.nortal.activedirectoryrestapi.entities.OneTimeKeys;
 import com.nortal.activedirectoryrestapi.exceptions.TerminatingError;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
-import java.security.spec.*;
-import java.util.Arrays;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 @RequiredArgsConstructor
 @Service
 public class CryptoService {
-    private final Logger logger = LoggerFactory.getLogger(CryptoService.class);
     private final NotificationListener notificationListener;
     private final OneTimeKeysService oneTimeKeysService;
     private byte[] sharedSecret;
@@ -32,7 +29,6 @@ public class CryptoService {
             String alicePublicKeyBase64 = Base64.getEncoder().encodeToString(aliceKeyPair.getPublic().getEncoded());
 
             Long id = oneTimeKeysService.saveOneTimeKeys(alicePublicKeyBase64);
-
             OneTimeKeys oneTimeKeys = notificationListener.getOneTimeKeys(id);
 
             String bobPublicKeyBase64 = oneTimeKeys.getBobPublicKey();

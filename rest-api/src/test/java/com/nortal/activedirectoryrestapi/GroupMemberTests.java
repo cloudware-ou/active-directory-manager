@@ -10,6 +10,8 @@ import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,11 +59,16 @@ public class GroupMemberTests {
     public void testGetGroupMembers() {
 
         String url = getBaseUrl() + "/groups/members?Identity=CN=gruppp,CN=Users,DC=Domain,DC=ee";
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         System.out.println(response.getBody());
-        assertTrue(Objects.requireNonNull(response.getBody()).contains("Arkadi Statsenko"));
+        assertTrue(Objects.requireNonNull(response.getBody()).toPrettyString().contains("Arkadi Statsenko"));
 
 
     }
@@ -80,7 +87,7 @@ public class GroupMemberTests {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
@@ -100,11 +107,11 @@ public class GroupMemberTests {
 
         HttpEntity<MultiValueMap<String, Object>> deleteEntity = new HttpEntity<>(params);
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<JsonNode> response = restTemplate.exchange(
                 deleteUrl,
                 HttpMethod.DELETE,
                 deleteEntity,
-                String.class
+                JsonNode.class
         );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());

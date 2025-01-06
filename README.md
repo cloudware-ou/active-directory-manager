@@ -144,11 +144,11 @@ You can view and trigger the Jenkins job here:
 The pipeline performs the following steps:
 1. **Test Execution:** Runs automated tests to ensure that the application is functioning as expected.
 2. **Build Spring Boot App:** Compiles and builds the Spring Boot application.
-3. **Build Docker Image:** Creates a Docker image of the application, which can then be deployed to a server.
+3. **Build Docker Image:** Creates a Docker image of the PowerShell component.
 
 This pipeline ensures that the application is tested and built in a repeatable and automated manner, reducing the potential for errors during manual setup.
 
-### License
+# License
 
 Active Directory Manager is licensed under the terms and conditions of the GNU Affero General Public License, Version 3.0.
 

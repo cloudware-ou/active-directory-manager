@@ -1,9 +1,7 @@
 package com.nortal.activedirectoryrestapi.components;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -17,12 +15,20 @@ public class CustomJsonDeserializer extends JsonDeserializer<Map<String, Object>
 
     @Override
     public Map<String, Object> deserialize(JsonParser jsonParser, DeserializationContext ctxt) throws IOException {
-        Map<String, Object> result = parseObject(jsonParser);
+        List<char[]> charArraysToErase = new ArrayList<>();
+        Map<String, Object> result = parseObject(jsonParser, charArraysToErase);
+
         jsonParser.close();
+
+        // Erase buffer possibly containing password data
+        for (char[] buffer : charArraysToErase) {
+            Arrays.fill(buffer, '\u0000');
+        }
+
         return result;
     }
 
-    private Map<String, Object> parseObject(JsonParser jp) throws IOException {
+    private Map<String, Object> parseObject(JsonParser jp, List<char[]> charArraysToErase) throws IOException {
         Map<String, Object> map = new HashMap<>();
         JsonToken token;
 
@@ -30,24 +36,28 @@ public class CustomJsonDeserializer extends JsonDeserializer<Map<String, Object>
             if (token == JsonToken.FIELD_NAME) {
                 String fieldName = jp.currentName();
                 jp.nextToken(); // Move to the value
-                map.put(fieldName, parseValue(jp));
+                map.put(fieldName, parseValue(jp, charArraysToErase));
             }
         }
         return map;
     }
 
-    private Object parseValue(JsonParser jp) throws IOException {
+    private Object parseValue(JsonParser jp, List<char[]> charArraysToErase) throws IOException {
         JsonToken token = jp.currentToken();
 
         return switch (token) {
-            case START_OBJECT -> parseObject(jp);
-            case START_ARRAY -> parseArray(jp);
+            case START_OBJECT -> parseObject(jp, charArraysToErase);
+            case START_ARRAY -> parseArray(jp, charArraysToErase);
             case VALUE_STRING -> {
                 // We want to get char[] instead of default String here
                 int offset = jp.getTextOffset();
                 int length = jp.getTextLength();
+                char[] buffer = jp.getTextCharacters();
+
+                charArraysToErase.add(buffer);
+
                 char[] charArray = new char[length];
-                System.arraycopy(jp.getTextCharacters(), offset, charArray, 0, length);
+                System.arraycopy(buffer, offset, charArray, 0, length);
                 yield charArray;
             }
             case VALUE_NUMBER_INT -> jp.getLongValue();
@@ -58,11 +68,11 @@ public class CustomJsonDeserializer extends JsonDeserializer<Map<String, Object>
         };
     }
 
-    private Object[] parseArray(JsonParser jp) throws IOException {
+    private Object[] parseArray(JsonParser jp, List<char[]> charArraysToErase) throws IOException {
         ArrayList<Object> result = new ArrayList<>();
 
         while (jp.nextToken() != JsonToken.END_ARRAY) {
-            result.add(parseValue(jp));
+            result.add(parseValue(jp, charArraysToErase));
         }
 
         return result.toArray();

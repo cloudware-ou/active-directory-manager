@@ -8,6 +8,8 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -85,7 +87,8 @@ public class UserTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> updateEntity = new HttpEntity<>(updatePayload, headers);
-        ResponseEntity<String> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PUT, updateEntity, String.class);
+
+        ResponseEntity<JsonNode> updateResponse = restTemplate.exchange(updateUrl, HttpMethod.PATCH, updateEntity, JsonNode.class);
 
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
 
@@ -100,7 +103,7 @@ public class UserTests {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(newUserPayload, headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, entity, JsonNode.class);
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         createdUserSamAccountName = "testuser";
     }
@@ -109,17 +112,27 @@ public class UserTests {
     public void testGetUsers1() {
 
         String url = getBaseUrl() + "/users?Filter=*&SearchBase=DC=Domain,DC=ee";
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(Objects.requireNonNull(response.getBody()).contains("testuser2"));
+        assertTrue(Objects.requireNonNull(response.getBody()).toPrettyString().contains("testuser2"));
     }
 
     @Test
     public void testGetUsers2() {
 
         String url = getBaseUrl() + "/users?Identity=nonexistinguser";
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(null), String.class);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }

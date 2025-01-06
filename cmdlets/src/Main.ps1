@@ -25,7 +25,7 @@ $Global:sessionManager = [SessionManager]::new($Env:ADServer, $Env:ADUsername, $
 # Function to create and open a PostgreSQL connection
 function Get-PostgreSQLConnection {
     try {
-        $connString = "Host=$Env:db_host;Port=$Env:db_port;Username=$Env:db_user;Password=$Env:db_password;Database=$Env:db_name;Include Error Detail=true"
+        $connString = "Host=$Env:db_host;Port=$Env:db_port;Username=$Env:db_user;Password=$Env:db_password;Database=$Env:db_name;"
         $conn = [Npgsql.NpgsqlConnection]::new($connString)
         $conn.Open()
 

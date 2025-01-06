@@ -35,7 +35,7 @@ public class RESTApiController {
     }
 
     @Operation(summary = "Update user details (Set-ADUser)")
-    @PutMapping("/users")
+    @PatchMapping("/users")
     public ResponseEntity<JsonNode> updateUser(@RequestBody Map<String, Object> payload) {
         return commandWorker.submitJob("Set-ADUser", payload);
     }
@@ -59,7 +59,7 @@ public class RESTApiController {
     }
 
     @Operation(summary = "Update group details (Set-ADGroup)")
-    @PutMapping("/groups")
+    @PatchMapping("/groups")
     public ResponseEntity<JsonNode> updateGroup(@RequestBody Map<String, Object> payload) {
         return commandWorker.submitJob("Set-ADGroup", payload);
     }
@@ -83,19 +83,19 @@ public class RESTApiController {
     }
 
     @Operation(summary = "Enable Active Directory account (Enable-ADAccount)")
-    @PutMapping("/accounts/enable")
+    @PatchMapping("/accounts/enable")
     public ResponseEntity<JsonNode> enableAccount(@RequestBody Map<String, Object> payload){
         return commandWorker.submitJob("Enable-ADAccount", payload);
     }
 
     @Operation(summary = "Disable Active Directory account (Disable-ADAccount)")
-    @PutMapping("/accounts/disable")
+    @PatchMapping("/accounts/disable")
     public ResponseEntity<JsonNode> disableAccount(@RequestBody Map<String, Object> payload){
         return commandWorker.submitJob("Disable-ADAccount", payload);
     }
 
     @Operation(summary = "Change/Reset Active Directory account password (Set-ADAccountPassword)")
-    @PutMapping("/accounts/password")
+    @PatchMapping("/accounts/password")
     public ResponseEntity<JsonNode> setAccountPassword(@RequestBody Map<String, Object> payload){
         return commandWorker.submitJob("Set-ADAccountPassword", payload);
     }
