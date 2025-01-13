@@ -139,7 +139,7 @@ There is also a Jenkins pipeline that automates the testing and building process
 
 You can view and trigger the Jenkins job here:
 
-[Jenkins Pipeline - Active Directory Manager](https://srv620081.hstgr.cloud/job/ActiveDirectory/)
+[Jenkins Pipeline - Active Directory Manager](https://jenkins.gooserave.eu/job/ActiveDirectory/)
 
 The pipeline performs the following steps:
 1. **Test Execution:** Runs automated tests to ensure that the application is functioning as expected.
